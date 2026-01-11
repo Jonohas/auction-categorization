@@ -39,3 +39,6 @@ coverage/
 
 timestamp-files/
 timestamp-files/*
+
+# Config
+config/config.toml
