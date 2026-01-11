@@ -1,0 +1,20 @@
+meta {
+  name: Enable Scraper
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/enableScraper
+  body: json
+  auth: none
+}
+
+body:json {
+  {"scraperId": "{{scraperId}}"}
+}
+
+docs {
+  Enable a previously disabled scraper.
+  Once enabled, the scraper can be triggered for scraping.
+}

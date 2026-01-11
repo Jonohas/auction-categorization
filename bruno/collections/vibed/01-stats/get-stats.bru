@@ -1,0 +1,20 @@
+meta {
+  name: Get Stats
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/getStats
+  body: none
+  auth: none
+}
+
+docs {
+  Get system statistics including:
+  - Number of scrapers configured
+  - Number of auctions scraped
+  - Number of items found
+  - Average hardware probability
+  - Number of enabled scrapers
+}

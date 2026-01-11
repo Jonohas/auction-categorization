@@ -1,0 +1,20 @@
+meta {
+  name: Disable Scraper
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/disableScraper
+  body: json
+  auth: none
+}
+
+body:json {
+  {"scraperId": "{{scraperId}}"}
+}
+
+docs {
+  Disable a scraper to prevent it from being scraped.
+  When disabled, the scraper cannot be triggered for scraping.
+}

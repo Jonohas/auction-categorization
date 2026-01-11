@@ -1,0 +1,29 @@
+meta {
+  name: Get All Auctions
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/getAuctions
+  body: none
+  auth: none
+}
+
+docs {
+  Get all auctions with optional filtering and sorting.
+  
+  Query Parameters:
+  - scraperId: Filter by specific scraper ID (use "all" for no filter)
+  - minProbability: Filter by minimum hardware probability (e.g., "0.5")
+  - maxProbability: Filter by maximum hardware probability
+  - search: Search in title and description
+  - sortBy: Sort by "date" or "probability"
+  - sortOrder: Sort order "asc" or "desc"
+  
+  Returns auctions with:
+  - Basic auction info (id, url, title, description, dates)
+  - Hardware probability score
+  - Associated scraper info
+  - Array of auction items (if any)
+}

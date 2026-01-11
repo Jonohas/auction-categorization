@@ -1,0 +1,23 @@
+meta {
+  name: BOPA Direct Test
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/scrapeBopa
+  body: none
+  auth: none
+}
+
+docs {
+  Test the BOPA scraper directly without saving to database.
+  Returns raw scraped auction data from bopa.be including:
+  - Auction titles
+  - References
+  - Lot counts
+  - Closing dates
+  - Locations
+  
+  Useful for testing scraper functionality without database side effects.
+}

@@ -1,0 +1,32 @@
+meta {
+  name: Scrape Scraper
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/scrapeScraper
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "scraperId": "{{scraperId}}"
+  }
+}
+
+docs {
+  Trigger scraping for a specific scraper.
+  This will:
+  1. Check if the scraper exists and is enabled
+  2. Scrape the configured URL
+  3. Create new auctions if they don't exist
+  4. Update existing auctions if they do exist
+  
+  Guard rails:
+  - Returns 400 if scraperId is missing
+  - Returns 404 if scraper doesn't exist
+  - Returns 400 if scraper is disabled
+  - Returns 400 if no scraper implementation exists for the URL
+}

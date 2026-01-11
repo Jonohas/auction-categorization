@@ -1,0 +1,20 @@
+meta {
+  name: Get All Scrapers
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/getScrapers
+  body: none
+  auth: none
+}
+
+docs {
+  Get all configured scrapers from the database.
+  Returns scrapers loaded from config.toml including:
+  - Scraper ID, name, URL, and image URL
+  - Whether the scraper is enabled
+  - Count of auctions associated with each scraper
+  - Timestamps for creation and last update
+}

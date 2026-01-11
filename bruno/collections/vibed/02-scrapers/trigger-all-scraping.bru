@@ -1,0 +1,28 @@
+meta {
+  name: Trigger All Scraping
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/triggerScrape
+  body: none
+  auth: none
+}
+
+docs {
+  Trigger scraping for all enabled scrapers.
+  This will:
+  1. First initialize scrapers from config.toml (if not already done)
+  2. Filter to only enabled scrapers
+  3. Scrape each enabled scraper concurrently (respects max_concurrent config)
+  4. Create/update auctions in the database
+  
+  Returns an array of results, one per scraper.
+  Each result contains:
+  - success: boolean
+  - scraperId: string
+  - auctionsFound: number
+  - auctionsCreated: number
+  - error: string (if failed)
+}

@@ -1,0 +1,21 @@
+meta {
+  name: Get Auction Details
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/getAuction?id={{auctionId}}
+  body: none
+  auth: none
+}
+
+docs {
+  Get detailed information about a specific auction including:
+  - All auction metadata
+  - Associated scraper information
+  - All auction items with their details
+  - Hardware probability scores for auction and items
+  
+  Items are sorted by hardware probability (highest first).
+}

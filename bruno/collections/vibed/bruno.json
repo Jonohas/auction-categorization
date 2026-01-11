@@ -1,0 +1,136 @@
+{
+  "version": "1",
+  "name": "vibed",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ],
+  "environments": [
+    {
+      "name": "local",
+      "uid": "env-local",
+      "values": [
+        {
+          "name": "baseUrl",
+          "value": "http://localhost:3000",
+          "enabled": true
+        },
+        {
+          "name": "scraperId",
+          "value": "cmk9va7jg00003u9cbyarpbkq",
+          "enabled": true
+        },
+        {
+          "name": "auctionId",
+          "value": "cmk9va7o800033u9c9umcub2v",
+          "enabled": true
+        }
+      ]
+    }
+  ],
+  "requests": [
+    {
+      "uid": "req-1",
+      "name": "Get Stats",
+      "type": "http",
+      "seq": 1,
+      "method": "GET",
+      "url": "{{baseUrl}}/api/getStats",
+      "body": {
+        "mode": "none"
+      }
+    },
+    {
+      "uid": "req-2",
+      "name": "Get All Scrapers",
+      "type": "http",
+      "seq": 1,
+      "method": "GET",
+      "url": "{{baseUrl}}/api/getScrapers",
+      "body": {
+        "mode": "none"
+      }
+    },
+    {
+      "uid": "req-3",
+      "name": "Scrape Scraper",
+      "type": "http",
+      "seq": 2,
+      "method": "POST",
+      "url": "{{baseUrl}}/api/scrapeScraper",
+      "body": {
+        "mode": "json",
+        "json": "{\n  \"scraperId\": \"{{scraperId}}\"\n}"
+      }
+    },
+    {
+      "uid": "req-4",
+      "name": "Enable Scraper",
+      "type": "http",
+      "seq": 3,
+      "method": "POST",
+      "url": "{{baseUrl}}/api/enableScraper",
+      "body": {
+        "mode": "json",
+        "json": "{\n  \"scraperId\": \"{{scraperId}}\"\n}"
+      }
+    },
+    {
+      "uid": "req-5",
+      "name": "Disable Scraper",
+      "type": "http",
+      "seq": 4,
+      "method": "POST",
+      "url": "{{baseUrl}}/api/disableScraper",
+      "body": {
+        "mode": "json",
+        "json": "{\n  \"scraperId\": \"{{scraperId}}\"\n}"
+      }
+    },
+    {
+      "uid": "req-6",
+      "name": "Trigger All Scraping",
+      "type": "http",
+      "seq": 5,
+      "method": "POST",
+      "url": "{{baseUrl}}/api/triggerScrape",
+      "body": {
+        "mode": "none"
+      }
+    },
+    {
+      "uid": "req-7",
+      "name": "Get All Auctions",
+      "type": "http",
+      "seq": 1,
+      "method": "GET",
+      "url": "{{baseUrl}}/api/getAuctions",
+      "body": {
+        "mode": "none"
+      }
+    },
+    {
+      "uid": "req-8",
+      "name": "Get Auction Details",
+      "type": "http",
+      "seq": 2,
+      "method": "GET",
+      "url": "{{baseUrl}}/api/getAuction?id={{auctionId}}",
+      "body": {
+        "mode": "none"
+      }
+    },
+    {
+      "uid": "req-9",
+      "name": "BOPA Direct Test",
+      "type": "http",
+      "seq": 1,
+      "method": "GET",
+      "url": "{{baseUrl}}/api/scrapeBopa",
+      "body": {
+        "mode": "none"
+      }
+    }
+  ]
+}

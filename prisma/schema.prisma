@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Scraper {
+  id          String     @id @default(cuid())
+  url         String     @unique
+  name        String
+  imageUrl    String?
+  enabled     Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  auctions    Auction[]
+}
+
+model Auction {
+  id                    String      @id @default(cuid())
+  url                   String      @unique
+  title                 String
+  description           String?
+  startDate             DateTime?
+  endDate               DateTime?
+  hardwareProbability   Float?
+  itemsCount            Int         @default(0)
+  scraperId             String
+  scraper               Scraper     @relation(fields: [scraperId], references: [id], onDelete: Cascade)
+  items                 AuctionItem[]
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  @@index([scraperId])
+  @@index([hardwareProbability])
+}
+
+model AuctionItem {
+  id                  String    @id @default(cuid())
+  url                 String    @unique
+  title               String
+  description         String?
+  imageUrl            String?
+  currentPrice        Float?
+  bidCount            Int       @default(0)
+  hardwareProbability Float?
+  mainCategoryId      String?
+  mainCategory        Category? @relation(fields: [mainCategoryId], references: [id])
+  auctionId           String
+  auction             Auction   @relation(fields: [auctionId], references: [id], onDelete: Cascade)
+  categoryProbabilities CategoryProbability[]
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@index([auctionId])
+  @@index([hardwareProbability])
+  @@index([mainCategoryId])
+}
+
+model Category {
+  id          String     @id @default(cuid())
+  name        String     @unique
+  description String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  items       AuctionItem[]
+  probabilities CategoryProbability[]
+}
+
+model CategoryProbability {
+  id          String       @id @default(cuid())
+  probability Float
+  itemId      String
+  item        AuctionItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  categoryId  String
+  category    Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@unique([itemId, categoryId])
+  @@index([itemId])
+  @@index([categoryId])
+}
