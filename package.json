@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "concurrently \"bun run dev:server\" \"bun run dev:client\"",
     "dev:server": "bun run --watch src/server/index.ts",
-    "dev:client": "vite",
+    "dev:client": "vite --host",
     "build": "vite build",
     "start": "NODE_ENV=production bun run src/server/index.ts"
   },
