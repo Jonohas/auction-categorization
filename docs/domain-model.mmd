@@ -1,0 +1,97 @@
+```mermaid
+erDiagram
+    Scraper ||--o{ Auction : has
+    Auction ||--o{ AuctionItem : contains
+    Category ||--o{ AuctionItem : categorized_as
+    AuctionItem ||--o{ CategoryProbability : has_probabilities
+    Category ||--o{ CategoryProbability : probability_for
+
+    Scraper {
+        string id PK
+        string url UK
+        string name
+        string imageUrl
+        boolean enabled
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    Auction {
+        string id PK
+        string url UK
+        string title
+        string description
+        datetime startDate
+        datetime endDateProbability
+        int
+        float hardware itemsCount
+        string scraperId FK
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    AuctionItem {
+        string id PK
+        string url UK
+        string title
+        string description
+        string imageUrl
+        float currentPrice
+        int bidCount
+        float hardwareProbability
+        string mainCategoryId FK
+        string auctionId FK
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    Category {
+        string id PK
+        string name UK
+        string description
+        boolean isSystem
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    CategoryProbability {
+        string id PK
+        float probability
+        string itemId FK
+        string categoryId FK
+        datetime createdAt
+        datetime updatedAt
+    }
+```
+
+## Domain Model Diagram
+
+```mermaid
+graph TD
+    A[Scraper] --> B[Auction]
+    B --> C[AuctionItem]
+    C --> D[Category]
+    C --> E[CategoryProbability]
+    D --> E
+
+    subgraph Scraping
+    A
+    B
+    end
+
+    subgraph Items
+    C
+    D
+    E
+    end
+```
+
+## Key Relationships
+
+| Relationship | Type | Description |
+|-------------|------|-------------|
+| Scraper -> Auction | 1:n | One scraper can have many auctions |
+| Auction -> AuctionItem | 1:n | One auction can have many items |
+| Category -> AuctionItem | 1:n | One category can be assigned to many items |
+| AuctionItem -> CategoryProbability | 1:n | One item can have many category probabilities |
+| Category -> CategoryProbability | 1:n | One category can have many probability records |
