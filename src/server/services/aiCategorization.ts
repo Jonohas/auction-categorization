@@ -20,6 +20,7 @@ interface CategoryInfo {
   id: string;
   name: string;
   description?: string | null;
+  isSystem?: boolean;
 }
 
 async function callAzureOpenAI(
@@ -145,14 +146,57 @@ export async function categorizeItem(
   // Create a map of category name -> id for lookup
   const nameToIdMap = new Map(categories.map((c) => [c.name.toLowerCase(), c.id]));
 
+  // Find the "Other" system category for fallback
+  const otherCategory = categories.find((c) => c.isSystem && c.name.toLowerCase() === "other");
+
+  // Log any category names returned by AI that don't match valid categories
+  const validCategoryNames = new Set(categories.map((c) => c.name.toLowerCase()));
+  const returnedCategories = Object.keys(probabilities);
+  const unmatchedCategories = returnedCategories.filter(
+    (name) => !validCategoryNames.has(name.toLowerCase())
+  );
+
+  // Calculate the total probability assigned to unmatched categories
+  let unmatchedProbability = 0;
+  if (unmatchedCategories.length > 0) {
+    unmatchedProbability = unmatchedCategories.reduce(
+      (sum, name) => sum + (probabilities[name] || 0),
+      0
+    );
+    console.warn(
+      `[AI Categorization] Unmatched categories for item "${item.title}" (ID: ${item.id}):`,
+      {
+        unmatchedCategories,
+        unmatchedProbability,
+        validCategories: categories.map((c) => c.name),
+        aiResponse: probabilities,
+      }
+    );
+  }
+
+  // Filter to only valid category matches
   const results: CategoryProbabilityResult[] = Object.entries(probabilities)
-    .filter(([name, prob]) => prob > 0.01)
+    .filter(([name, prob]) => prob > 0.01 && nameToIdMap.has(name.toLowerCase()))
     .map(([name, prob]) => ({
-      categoryId: nameToIdMap.get(name.toLowerCase()) || name, // Fallback to name if not found
+      categoryId: nameToIdMap.get(name.toLowerCase())!,
       probability: Math.max(0, Math.min(1, prob)),
     }))
-    .filter((r) => r.categoryId !== r.probability.toString()) // Filter out entries where categoryId is not a valid ID
     .sort((a, b) => b.probability - a.probability);
+
+  // If there were unmatched categories and we have an "Other" category,
+  // add that probability to "Other" as a fallback
+  if (unmatchedProbability > 0 && otherCategory) {
+    const existingOther = results.find((r) => r.categoryId === otherCategory.id);
+    if (existingOther) {
+      existingOther.probability = Math.min(1, existingOther.probability + unmatchedProbability);
+    } else if (unmatchedProbability > 0.01) {
+      results.push({
+        categoryId: otherCategory.id,
+        probability: Math.min(1, unmatchedProbability),
+      });
+      results.sort((a, b) => b.probability - a.probability);
+    }
+  }
 
   return {
     itemId: item.id,

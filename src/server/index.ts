@@ -1,9 +1,18 @@
 import express from "express";
 import { loadConfig } from "./lib/config";
+import { ensureSystemCategories, ensureConfigScrapers } from "./lib/db";
 import { apiHandlers } from "./routes/api";
 
 const config = loadConfig();
 const app = express();
+
+// Bootstrap system data
+ensureSystemCategories().catch((err) => {
+  console.error("Failed to ensure system categories:", err);
+});
+ensureConfigScrapers().catch((err) => {
+  console.error("Failed to ensure config scrapers:", err);
+});
 
 app.use(express.json());
 

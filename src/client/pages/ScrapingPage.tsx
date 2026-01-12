@@ -1,59 +1,23 @@
-import { createFileRoute } from "@tanstack/start";
-import { createServerFn } from "@tanstack/start";
-import { useState } from "react";
-import { useServerData } from "@tanstack/start";
+import { useState, useEffect } from "react";
+import { PageHeader, Card, CardHeader, AlertMessage, Button, StatusBadge } from "../components";
 
-export const Route = createFileRoute("/scraping")({
-  component: ScrapingPage,
-});
-
-export const getScrapersFn = createServerFn({
-  handler: async () => {
-    const response = await fetch("http://localhost:3000/api/getScrapers");
-    return await response.json();
-  },
-});
-
-export const triggerScraperScrapeFn = createServerFn({
-  handler: async ({ scraperId }: { scraperId: string }) => {
-    const response = await fetch("http://localhost:3000/api/scrapeScraper", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ scraperId }),
-    });
-    return await response.json();
-  },
-});
-
-export const enableScraperFn = createServerFn({
-  handler: async ({ scraperId }: { scraperId: string }) => {
-    const response = await fetch("http://localhost:3000/api/enableScraper", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ scraperId }),
-    });
-    return await response.json();
-  },
-});
-
-export const disableScraperFn = createServerFn({
-  handler: async ({ scraperId }: { scraperId: string }) => {
-    const response = await fetch("http://localhost:3000/api/disableScraper", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ scraperId }),
-    });
-    return await response.json();
-  },
-});
-
-function ScrapingPage() {
+export function ScrapingPage() {
+  const [scrapers, setScrapers] = useState<any[]>([]);
   const [isScraping, setIsScraping] = useState(false);
   const [scrapingId, setScrapingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  const scrapers = useServerData("scrapers");
+  useEffect(() => {
+    fetchScrapers();
+  }, []);
+
+  const fetchScrapers = () => {
+    fetch("/api/getScrapers")
+      .then((res) => res.json())
+      .then(setScrapers)
+      .catch(console.error);
+  };
 
   const handleScrapeAll = async () => {
     setIsScraping(true);
@@ -61,7 +25,7 @@ function ScrapingPage() {
     setSuccess(null);
 
     try {
-      const response = await fetch("http://localhost:3000/api/triggerScrape", {
+      const response = await fetch("/api/triggerScrape", {
         method: "POST",
       });
       const results = await response.json();
@@ -84,6 +48,7 @@ function ScrapingPage() {
       } else {
         setSuccess(`Scraping complete! Found ${totalFound} auctions, created ${totalCreated} new.`);
       }
+      fetchScrapers();
     } catch (err) {
       setError("Failed to trigger scraping");
     } finally {
@@ -96,10 +61,8 @@ function ScrapingPage() {
     setError(null);
     setSuccess(null);
 
-    console.log(scraperId);
-
     try {
-      const response = await fetch("http://localhost:3000/api/scrapeScraper", {
+      const response = await fetch("/api/scrapeScraper", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ scraperId }),
@@ -108,6 +71,7 @@ function ScrapingPage() {
 
       if (result.success) {
         setSuccess(`Found ${result.auctionsFound} auctions, created ${result.auctionsCreated} new.`);
+        fetchScrapers();
       } else {
         setError(result.error || "Failed to scrape");
       }
@@ -120,7 +84,7 @@ function ScrapingPage() {
 
   const handleToggleScraper = async (scraperId: string, enabled: boolean) => {
     try {
-      const response = await fetch(enabled ? "http://localhost:3000/api/disableScraper" : "http://localhost:3000/api/enableScraper", {
+      const response = await fetch(enabled ? "/api/disableScraper" : "/api/enableScraper", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ scraperId }),
@@ -129,8 +93,7 @@ function ScrapingPage() {
 
       if (result.success) {
         setSuccess(`Scraper ${enabled ? "disabled" : "enabled"} successfully!`);
-        // Refresh the page data
-        window.location.reload();
+        fetchScrapers();
       } else {
         setError(result.error || "Failed to update scraper");
       }
@@ -141,48 +104,34 @@ function ScrapingPage() {
 
   return (
     <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Scraper Management</h1>
-        <div className="flex gap-4">
-          <button
-            onClick={handleScrapeAll}
-            disabled={isScraping}
-            className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
-          >
+      <PageHeader
+        title="Scraper Management"
+        action={
+          <Button onClick={handleScrapeAll} loading={isScraping}>
             {isScraping ? "Scraping..." : "Scrape All Enabled"}
-          </button>
-        </div>
-      </div>
+          </Button>
+        }
+      />
 
-      {/* Messages */}
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
-      )}
-      {success && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-          {success}
-        </div>
-      )}
+      {error && <AlertMessage type="error" message={error} className="mb-4" />}
+      {success && <AlertMessage type="success" message={success} className="mb-4" />}
 
-      {/* Scrapers List */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="px-6 py-4 border-b border-gray-200">
+      <Card>
+        <CardHeader>
           <h2 className="text-lg font-semibold text-gray-900">
-            Predefined Scrapers ({scrapers?.length || 0})
+            Predefined Scrapers ({scrapers.length})
           </h2>
           <p className="mt-1 text-sm text-gray-500">
-            Configure and manage your auction scrapers. Scraper configuration is managed via the config.toml file.
+            Scraper configuration is managed via the config.toml file. Enable/disable scrapers and trigger manual scrapes.
           </p>
-        </div>
+        </CardHeader>
         <ul className="divide-y divide-gray-200">
-          {scrapers?.length === 0 ? (
+          {scrapers.length === 0 ? (
             <li className="px-6 py-8 text-center text-gray-500">
               No scrapers configured. Add scrapers to your config.toml file.
             </li>
           ) : (
-            scrapers?.map((scraper: { id: string; name: string; url: string; imageUrl?: string | null; enabled: boolean; _count: { auctions: number } }) => (
+            scrapers.map((scraper) => (
               <li key={scraper.id} className="px-6 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   {scraper.imageUrl ? (
@@ -200,33 +149,35 @@ function ScrapingPage() {
                       {scraper.url}
                     </div>
                     <div className="text-xs text-gray-400 mt-1">
-                      {scraper._count.auctions} auctions
+                      {scraper._count?.auctions || 0} auctions
                     </div>
                   </div>
                 </div>
                 <div className="flex gap-2 items-center">
-                  <span className={`px-2 py-1 text-xs rounded-full ${scraper.enabled ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                    {scraper.enabled ? 'Enabled' : 'Disabled'}
-                  </span>
-                  <button
+                  <StatusBadge enabled={scraper.enabled} />
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => handleScrapeScraper(scraper.id)}
                     disabled={!scraper.enabled || scrapingId === scraper.id}
-                    className="text-indigo-600 hover:text-indigo-800 text-sm font-medium disabled:opacity-50"
+                    className="text-indigo-600 hover:text-indigo-800"
                   >
                     {scrapingId === scraper.id ? "Scraping..." : "Scrape Now"}
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => handleToggleScraper(scraper.id, scraper.enabled)}
-                    className={`text-sm font-medium ${scraper.enabled ? 'text-orange-600 hover:text-orange-800' : 'text-green-600 hover:text-green-800'}`}
+                    className={scraper.enabled ? "text-orange-600 hover:text-orange-800" : "text-green-600 hover:text-green-800"}
                   >
-                    {scraper.enabled ? 'Disable' : 'Enable'}
-                  </button>
+                    {scraper.enabled ? "Disable" : "Enable"}
+                  </Button>
                 </div>
               </li>
             ))
           )}
         </ul>
-      </div>
+      </Card>
     </div>
   );
 }
