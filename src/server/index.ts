@@ -7,6 +7,11 @@ const app = express();
 
 app.use(express.json());
 
+// Health check endpoint
+app.get("/health", (req, res) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
 // API routes
 app.get("/api/getWebsites", apiHandlers.getWebsites);
 app.get("/api/getScrapers", apiHandlers.getScrapers);
