@@ -543,6 +543,11 @@ export const apiHandlers = {
         return res.status(404).json({ error: "Category not found" });
       }
 
+      // Prevent renaming system categories
+      if (existing.isSystem && name.trim() !== existing.name) {
+        return res.status(403).json({ error: "System categories cannot be renamed" });
+      }
+
       // Check for duplicate name
       const duplicate = await prisma.category.findFirst({
         where: {
@@ -585,6 +590,11 @@ export const apiHandlers = {
 
       if (!category) {
         return res.status(404).json({ error: "Category not found" });
+      }
+
+      // Prevent deletion of system categories
+      if (category.isSystem) {
+        return res.status(403).json({ error: "System categories cannot be deleted" });
       }
 
       // Remove mainCategoryId from items first
@@ -839,9 +849,9 @@ export const apiHandlers = {
         return res.status(404).json({ error: "Item not found" });
       }
 
-      // Fetch all categories
+      // Fetch all categories (including isSystem for fallback logic)
       const categories = await prisma.category.findMany({
-        select: { id: true, name: true, description: true },
+        select: { id: true, name: true, description: true, isSystem: true },
       });
 
       if (categories.length === 0) {
@@ -896,9 +906,9 @@ export const apiHandlers = {
         return res.status(404).json({ error: "No items found" });
       }
 
-      // Fetch all categories
+      // Fetch all categories (including isSystem for fallback logic)
       const categories = await prisma.category.findMany({
-        select: { id: true, name: true, description: true },
+        select: { id: true, name: true, description: true, isSystem: true },
       });
 
       if (categories.length === 0) {
@@ -962,9 +972,9 @@ export const apiHandlers = {
         return res.status(400).json({ error: "Auction has no items" });
       }
 
-      // Fetch all categories
+      // Fetch all categories (including isSystem for fallback logic)
       const categories = await prisma.category.findMany({
-        select: { id: true, name: true, description: true },
+        select: { id: true, name: true, description: true, isSystem: true },
       });
 
       if (categories.length === 0) {
