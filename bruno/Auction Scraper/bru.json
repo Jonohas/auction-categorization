@@ -5,7 +5,11 @@
     {
       "name": "Local",
       "variables": {
-        "baseUrl": "http://localhost:3000"
+        "baseUrl": "http://localhost:3000",
+        "scraperId": "",
+        "auctionId": "",
+        "itemId": "",
+        "categoryId": ""
       }
     }
   ],
@@ -65,7 +69,7 @@
     {
       "name": "Get Auction",
       "request": {
-        "url": "{{baseUrl}}/api/getAuction?id=",
+        "url": "{{baseUrl}}/api/getAuction?id={{auctionId}}",
         "method": "GET",
         "headers": [],
         "params": {},
@@ -78,7 +82,7 @@
     {
       "name": "Get Items",
       "request": {
-        "url": "{{baseUrl}}/api/getItems?auctionId=",
+        "url": "{{baseUrl}}/api/getItems?auctionId={{auctionId}}",
         "method": "GET",
         "headers": [],
         "params": {},
@@ -147,7 +151,7 @@
         "params": {},
         "body": {
           "type": "json",
-          "json": "{\n  \"id\": \"\"\n}"
+          "json": "{\n  \"id\": \"{{scraperId}}\"\n}"
         }
       },
       "tests": []
@@ -166,7 +170,7 @@
         "params": {},
         "body": {
           "type": "json",
-          "json": "{\n  \"scraperId\": \"\"\n}"
+          "json": "{\n  \"scraperId\": \"{{scraperId}}\"\n}"
         }
       },
       "tests": []
@@ -185,7 +189,7 @@
         "params": {},
         "body": {
           "type": "json",
-          "json": "{\n  \"scraperId\": \"\"\n}"
+          "json": "{\n  \"scraperId\": \"{{scraperId}}\"\n}"
         }
       },
       "tests": []
@@ -204,7 +208,7 @@
         "params": {},
         "body": {
           "type": "json",
-          "json": "{\n  \"scraperId\": \"\"\n}"
+          "json": "{\n  \"scraperId\": \"{{scraperId}}\"\n}"
         }
       },
       "tests": []
@@ -225,7 +229,7 @@
     {
       "name": "Get Category",
       "request": {
-        "url": "{{baseUrl}}/api/getCategory?id=",
+        "url": "{{baseUrl}}/api/getCategory?id={{categoryId}}",
         "method": "GET",
         "headers": [],
         "params": {},
@@ -268,7 +272,7 @@
         "params": {},
         "body": {
           "type": "json",
-          "json": "{\n  \"id\": \"\",\n  \"name\": \"Updated Name\",\n  \"description\": \"Updated description\"\n}"
+          "json": "{\n  \"id\": \"{{categoryId}}\",\n  \"name\": \"Updated Name\",\n  \"description\": \"Updated description\"\n}"
         }
       },
       "tests": []
@@ -287,7 +291,7 @@
         "params": {},
         "body": {
           "type": "json",
-          "json": "{\n  \"id\": \"\"\n}"
+          "json": "{\n  \"id\": \"{{categoryId}}\"\n}"
         }
       },
       "tests": []
@@ -295,7 +299,7 @@
     {
       "name": "Get Items By Category",
       "request": {
-        "url": "{{baseUrl}}/api/getItemsByCategory?categoryId=",
+        "url": "{{baseUrl}}/api/getItemsByCategory?categoryId={{categoryId}}",
         "method": "GET",
         "headers": [],
         "params": {},
@@ -319,7 +323,7 @@
         "params": {},
         "body": {
           "type": "json",
-          "json": "{\n  \"itemId\": \"\",\n  \"categoryId\": \"\"\n}"
+          "json": "{\n  \"itemId\": \"{{itemId}}\",\n  \"categoryId\": \"{{categoryId}}\"\n}"
         }
       },
       "tests": []
@@ -338,7 +342,7 @@
         "params": {},
         "body": {
           "type": "json",
-          "json": "{\n  \"itemId\": \"\",\n  \"probabilities\": [\n    {\"categoryId\": \"\", \"probability\": 0.75},\n    {\"categoryId\": \"\", \"probability\": 0.15},\n    {\"categoryId\": \"\", \"probability\": 0.05},\n    {\"categoryId\": \"\", \"probability\": 0.03},\n    {\"categoryId\": \"\", \"probability\": 0.02}\n  ]\n}"
+          "json": "{\n  \"itemId\": \"{{itemId}}\",\n  \"probabilities\": [\n    {\"categoryId\": \"{{categoryId}}\", \"probability\": 0.75}\n  ]\n}"
         }
       },
       "tests": []
@@ -346,12 +350,69 @@
     {
       "name": "Get Item Category Probabilities",
       "request": {
-        "url": "{{baseUrl}}/api/getItemCategoryProbabilities?itemId=",
+        "url": "{{baseUrl}}/api/getItemCategoryProbabilities?itemId={{itemId}}",
         "method": "GET",
         "headers": [],
         "params": {},
         "body": {
           "type": "none"
+        }
+      },
+      "tests": []
+    },
+    {
+      "name": "Categorize Item",
+      "request": {
+        "url": "{{baseUrl}}/api/categorizeItem",
+        "method": "POST",
+        "headers": [
+          {
+            "name": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "params": {},
+        "body": {
+          "type": "json",
+          "json": "{\n  \"itemId\": \"{{itemId}}\"\n}"
+        }
+      },
+      "tests": []
+    },
+    {
+      "name": "Categorize Items",
+      "request": {
+        "url": "{{baseUrl}}/api/categorizeItems",
+        "method": "POST",
+        "headers": [
+          {
+            "name": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "params": {},
+        "body": {
+          "type": "json",
+          "json": "{\n  \"itemIds\": [\"{{itemId}}\"]\n}"
+        }
+      },
+      "tests": []
+    },
+    {
+      "name": "Categorize Auction",
+      "request": {
+        "url": "{{baseUrl}}/api/categorizeAuction",
+        "method": "POST",
+        "headers": [
+          {
+            "name": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "params": {},
+        "body": {
+          "type": "json",
+          "json": "{\n  \"auctionId\": \"{{auctionId}}\",\n  \"saveResults\": true\n}"
         }
       },
       "tests": []
