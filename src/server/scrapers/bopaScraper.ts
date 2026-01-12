@@ -18,6 +18,10 @@ async function fetchHtml(url: string): Promise<string> {
 
 function makeAbsoluteUrl(baseUrl: string, relativeUrl: string): string {
   try {
+    // If the URL is already absolute, return it as-is
+    if (relativeUrl.startsWith("http://") || relativeUrl.startsWith("https://")) {
+      return relativeUrl;
+    }
     const base = new URL(baseUrl);
     const relative = relativeUrl.startsWith("/") ? relativeUrl : `/${relativeUrl}`;
     return new URL(relative, base).toString();
@@ -238,17 +242,19 @@ export class BopaScraper implements Scraper {
   /**
    * Find the URL for the next page of results
    */
-  private findNextPageUrl($: cheerio.CheerioAPI, baseUrl: string): string | null {
+  private findNextPageUrl($: cheerio.CheerioAPI, currentPageUrl: string): string | null {
+    // Determine current page number from URL
+    let currentPageNum = 1;
+    const currentPageMatch = currentPageUrl.match(/[?&]page=(\d+)/i);
+    if (currentPageMatch) {
+      currentPageNum = parseInt(currentPageMatch[1], 10);
+    }
+
     // Look for pagination links
     const paginationSelectors = [
       "a.next, a.next-page, a.pagination-next",
       "a[rel='next']",
       "a[class*='next']",
-      "[class*='pagination'] a:last-child:not(.disabled)",
-      ".pagination a:last-child",
-      "a[href*='page']:last-child",
-      ".pager a:last-child",
-      "[class*='pager'] a:last-child",
     ];
 
     for (const selector of paginationSelectors) {
@@ -256,14 +262,14 @@ export class BopaScraper implements Scraper {
       if (nextLink.length > 0) {
         const href = nextLink.attr("href");
         if (href && !href.includes("#") && !href.includes("javascript:") && href.trim() !== "") {
-          return makeAbsoluteUrl(baseUrl, href);
+          return makeAbsoluteUrl(currentPageUrl, href);
         }
       }
     }
 
-    // Also look for page links that indicate next page
+    // Look for page links and find the next sequential page
     const pageLinks = $("a[href*='page='], a[href*='/page/'], a[href*='?p=']");
-    let maxPageNum = 0;
+    const nextPageNum = currentPageNum + 1;
     let nextPageUrl: string | null = null;
 
     pageLinks.each((_, element) => {
@@ -272,9 +278,9 @@ export class BopaScraper implements Scraper {
         const pageMatch = href.match(/[?&]page=(\d+)|\/page\/(\d+)|[?&]p=(\d+)/i);
         if (pageMatch) {
           const pageNum = parseInt(pageMatch[1] || pageMatch[2] || pageMatch[3], 10);
-          if (pageNum > maxPageNum) {
-            maxPageNum = pageNum;
-            nextPageUrl = makeAbsoluteUrl(baseUrl, href);
+          // Look for the next sequential page number
+          if (pageNum === nextPageNum) {
+            nextPageUrl = makeAbsoluteUrl(currentPageUrl, href);
           }
         }
       }
