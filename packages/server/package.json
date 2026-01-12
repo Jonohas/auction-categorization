@@ -1,0 +1,33 @@
+{
+  "name": "@Jonohas/auction-scraper-server",
+  "module": "src/index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "catalog:dev",
+    "@types/express": "catalog:dev",
+    "autoprefixer": "catalog:dev",
+    "concurrently": "catalog:dev",
+    "postcss": "catalog:dev",
+    "prisma": "catalog:dev",
+    "typescript": "catalog:dev",
+    "@prisma/client": "catalog:dev",
+    "@types/node": "catalog:dev"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "scripts": {
+    "dev": "bun run --watch src/index.ts",
+    "build": "bun build src/index.ts",
+    "start": "bun run dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "prisma": "bunx prisma generate"
+  },
+  "dependencies": {
+    "cheerio": "catalog:",
+    "express": "catalog:",
+    "openai": "catalog:",
+    "toml": "catalog:"
+  }
+}

@@ -18,5 +18,5 @@
     },
     "baseUrl": "."
   },
-  "include": ["src/**/*", "prisma/**/*", "*.config.ts"]
+  "include": ["src/**/*", "prisma/**/*", "*.config.ts", "server/src/routes", "server/src/scrapers", "server/src/services", "server/src/index.ts", "server/src/lib"]
 }

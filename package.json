@@ -1,37 +1,42 @@
 {
-  "name": "auction-scraper",
+  "name": "@Jonohas/auction-scraper",
   "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"bun run dev:server\" \"bun run dev:client\"",
-    "dev:server": "bun run --watch src/server/index.ts",
-    "dev:client": "vite --host",
-    "build": "vite build",
-    "start": "NODE_ENV=production bun run src/server/index.ts"
+    "dev": "bun --filter '@Jonohas/*' dev",
+    "dev:client": "bun --filter @Jonohas/auction-scraper-client dev",
+    "dev:server": "bun --filter @Jonohas/auction-scraper-server dev",
+    "prisma-generate": "bun --filter @Jonohas/auction-scraper-server prisma"
   },
-  "dependencies": {
-    "@prisma/client": "^5.22.0",
-    "@types/node": "^25.0.6",
-    "cheerio": "^1.0.0-rc.10",
-    "express": "^4.21.0",
-    "openai": "^4.73.0",
+  "workspaces": [
+    "packages/*"
+  ],
+  "catalog": {
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.30.3",
+    "cheerio": "^1.0.0-rc.10",
+    "express": "^5.2.1",
+    "openai": "^4.73.0",
     "toml": "^3.0.0"
   },
-  "devDependencies": {
-    "@types/express": "^4.17.21",
-    "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.1",
-    "@vitejs/plugin-react": "^4.3.2",
-    "autoprefixer": "^10.4.20",
-    "concurrently": "^9.2.1",
-    "postcss": "^8.4.49",
-    "prisma": "^5.22.0",
-    "tailwindcss": "^3.4.15",
-    "typescript": "^5.6.3",
-    "vite": "^5.4.11"
+  "catalogs": {
+    "dev": {
+      "@types/node": "^25.0.6",
+      "@types/react": "^18.3.12",
+      "@types/react-dom": "^18.3.1",
+      "@types/bun": "latest",
+      "@types/express": "^4.17.21",
+      "@vitejs/plugin-react": "^4.3.2",
+      "@prisma/client": "6",
+      "autoprefixer": "^10.4.20",
+      "postcss": "^8.4.49",
+      "tailwindcss": "^3.4.15",
+      "vite": "^5.4.11",
+      "concurrently": "^9.2.1",
+      "prisma": "6",
+      "typescript": "^5.6.3"
+    }
   }
 }

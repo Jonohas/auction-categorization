@@ -1,0 +1,24 @@
+{
+  "name": "@Jonohas/auction-scraper-client",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite"
+  },
+  "dependencies": {
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "react-router-dom": "catalog:"
+  },
+  "devDependencies": {
+    "@types/react": "catalog:dev",
+    "@types/react-dom": "catalog:dev",
+    "@vitejs/plugin-react": "catalog:dev",
+    "autoprefixer": "catalog:dev",
+    "postcss": "catalog:dev",
+    "tailwindcss": "catalog:dev",
+    "typescript": "catalog:dev",
+    "vite": "catalog:dev"
+  }
+}

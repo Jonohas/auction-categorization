@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { Layout } from "./client/components";
+import { Layout } from "./components";
 import {
   HomePage,
   ScrapingPage,
@@ -7,7 +7,7 @@ import {
   AuctionDetailPage,
   CategoriesPage,
   CategoryDetailPage,
-} from "./client/pages";
+} from "./pages";
 
 export default function App() {
   return (

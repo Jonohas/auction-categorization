@@ -10,10 +10,6 @@ build/
 .env.local
 .env.*.local
 
-# Database
-prisma/*.db
-prisma/*.db-journal
-
 # IDE
 .idea/
 .vscode/
@@ -36,9 +32,3 @@ coverage/
 
 # Misc
 *.local
-
-timestamp-files/
-timestamp-files/*
-
-# Config
-config/config.toml
