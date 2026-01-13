@@ -9,7 +9,8 @@
   "dependencies": {
     "react": "catalog:",
     "react-dom": "catalog:",
-    "react-router-dom": "catalog:"
+    "react-router-dom": "catalog:",
+    "zustand": "^5.0.10"
   },
   "devDependencies": {
     "@types/react": "catalog:dev",

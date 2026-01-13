@@ -9,7 +9,9 @@ import {
   Button,
   EmptyState,
   ItemCard,
+  BulkActionToolbar,
 } from "../components";
+import { useItemSelectionStore } from "../stores/itemSelectionStore";
 
 const AIIcon = () => (
   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -31,6 +33,8 @@ export function AuctionDetailPage() {
   const [categorizeProgress, setCategorizeProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const clearSelection = useItemSelectionStore((state) => state.clearSelection);
+  const selectAll = useItemSelectionStore((state) => state.selectAll);
 
   useEffect(() => {
     fetch(`/api/getAuction?id=${auctionId}`)
@@ -38,12 +42,21 @@ export function AuctionDetailPage() {
       .then((data) => {
         setAuction(data);
         setLoading(false);
+        // Select all items by default
+        if (data.items && data.items.length > 0) {
+          selectAll(data.items.map((item: any) => item.id));
+        }
       })
       .catch((err) => {
         console.error(err);
         setLoading(false);
       });
   }, [auctionId]);
+
+  // Clear selection when leaving page
+  useEffect(() => {
+    return () => clearSelection();
+  }, [clearSelection]);
 
   const handleCategorizeAuction = async () => {
     if (!auction) return;
@@ -108,6 +121,40 @@ export function AuctionDetailPage() {
       const errorMessage = err instanceof Error ? err.message : "An error occurred";
       setError(errorMessage);
       console.error("Item categorization error:", err);
+    }
+  };
+
+  const handleBulkCategorize = async (itemIds: string[]) => {
+    setError(null);
+    setSuccess(null);
+    setCategorizeProgress(`Bulk categorizing ${itemIds.length} items...`);
+
+    try {
+      const response = await fetch("/api/categorizeItems", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ itemIds, saveResults: true }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to bulk categorize items");
+      }
+
+      setSuccess(`Successfully categorized ${data.itemCount} items!`);
+      clearSelection();
+
+      // Refresh auction data
+      const refreshResponse = await fetch(`/api/getAuction?id=${auctionId}`);
+      const refreshData = await refreshResponse.json();
+      setAuction(refreshData);
+    } catch (err: any) {
+      const errorMessage = err instanceof Error ? err.message : "An error occurred";
+      setError(errorMessage);
+      console.error("Bulk categorization error:", err);
+    } finally {
+      setCategorizeProgress(null);
     }
   };
 
@@ -176,9 +223,17 @@ export function AuctionDetailPage() {
         </CardFooter>
       </Card>
 
-      <h2 className="text-xl font-bold text-gray-900 mb-4">
-        Auction Items ({auction.items?.length || 0})
-      </h2>
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
+        <h2 className="text-xl font-bold text-gray-900">
+          Auction Items ({auction.items?.length || 0})
+        </h2>
+        {auction.items?.length > 0 && (
+          <BulkActionToolbar
+            allItemIds={auction.items.map((item: any) => item.id)}
+            onBulkCategorize={handleBulkCategorize}
+          />
+        )}
+      </div>
 
       {auction.items?.length === 0 ? (
         <EmptyState title="No items found" />

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Badge } from "./Badge";
+import { ItemSelectionCheckbox } from "./ItemSelectionCheckbox";
 
 interface CategoryProbability {
   id: string;
@@ -55,7 +56,8 @@ export function ItemCard({ item, onCategorize, showScraper = false, currencySymb
   };
 
   return (
-    <div className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow overflow-hidden">
+    <div className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow overflow-hidden relative">
+      <ItemSelectionCheckbox itemId={item.id} />
       {item.imageUrl && (
         <div className="aspect-video bg-gray-100">
           <img src={item.imageUrl} alt={item.title} className="w-full h-full object-contain" />
@@ -93,12 +95,11 @@ export function ItemCard({ item, onCategorize, showScraper = false, currencySymb
                 {item.mainCategory.name}
               </Link>
             ) : onCategorize ? (
-              <button
-                onClick={() => onCategorize(item.id)}
-                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200"
+              <div
+                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600"
               >
-                Categorize
-              </button>
+                Not yet categorized
+              </div>
             ) : null}
           </div>
         </div>
@@ -144,16 +145,6 @@ export function ItemCard({ item, onCategorize, showScraper = false, currencySymb
                 ))}
               </div>
             )}
-          </div>
-        ) : onCategorize ? (
-          <div className="mt-3 flex items-center justify-between">
-            <span className="text-xs text-gray-400 italic">No categories estimated yet</span>
-            <button
-              onClick={() => onCategorize(item.id)}
-              className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
-            >
-              AI Categorize →
-            </button>
           </div>
         ) : null}
       </div>
