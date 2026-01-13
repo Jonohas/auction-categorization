@@ -388,7 +388,8 @@ function processBulkResponse(
 
 /**
  * Categorize multiple items using AI with true bulk processing (single AI call per batch)
- * This significantly reduces token usage compared to individual calls
+ * This significantly reduces token usage compared to individual calls.
+ * All batches are processed in parallel using Promise.all for faster throughput.
  */
 export async function categorizeItemsBulk(
   items: CategorizeItemInput[],
@@ -401,30 +402,31 @@ export async function categorizeItemsBulk(
     }));
   }
 
-  // Process items in batches - each batch is a single AI call
   // Batch size of 10 balances token efficiency with response quality
   const batchSize = 10;
-  const results: CategorizationResult[] = [];
-
   const systemPrompt = buildBulkSystemPrompt(categories);
 
+  // Split items into batches
+  const batches: CategorizeItemInput[][] = [];
   for (let i = 0; i < items.length; i += batchSize) {
-    const batch = items.slice(i, i + batchSize);
-    const userPrompt = buildBulkUserPrompt(batch);
-
-    console.log(`[AI Bulk Categorization] Processing batch ${Math.floor(i / batchSize) + 1} of ${Math.ceil(items.length / batchSize)} (${batch.length} items)`);
-
-    const bulkResponse = await callAzureOpenAIBulk(systemPrompt, userPrompt);
-    const batchResults = processBulkResponse(bulkResponse, batch, categories);
-    results.push(...batchResults);
-
-    // Small delay between batches to avoid rate limiting
-    if (i + batchSize < items.length) {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-    }
+    batches.push(items.slice(i, i + batchSize));
   }
 
-  return results;
+  console.log(`[AI Bulk Categorization] Processing ${batches.length} batches in parallel (${items.length} total items)`);
+
+  // Process all batches in parallel
+  const batchPromises = batches.map(async (batch, index) => {
+    const userPrompt = buildBulkUserPrompt(batch);
+    console.log(`[AI Bulk Categorization] Starting batch ${index + 1} of ${batches.length} (${batch.length} items)`);
+
+    const bulkResponse = await callAzureOpenAIBulk(systemPrompt, userPrompt);
+    return processBulkResponse(bulkResponse, batch, categories);
+  });
+
+  const batchResults = await Promise.all(batchPromises);
+
+  // Flatten results while preserving order
+  return batchResults.flat();
 }
 
 /**
