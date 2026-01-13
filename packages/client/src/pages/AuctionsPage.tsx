@@ -18,6 +18,7 @@ export function AuctionsPage() {
   const [minProbability, setMinProbability] = useState("");
   const [sortBy, setSortBy] = useState("date");
   const [sortOrder, setSortOrder] = useState("desc");
+  const [hideEmptyAuctions, setHideEmptyAuctions] = useState(true);
 
   useEffect(() => {
     fetchData();
@@ -50,13 +51,17 @@ export function AuctionsPage() {
     }
   };
 
+  const filteredAuctions = hideEmptyAuctions
+    ? auctions.filter((auction) => (auction.items?.length || 0) > 0)
+    : auctions;
+
   return (
     <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
       <PageHeader title="Auctions" />
 
       <Card className="mb-8">
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
               <input
@@ -116,21 +121,32 @@ export function AuctionsPage() {
                 </select>
               </div>
             </div>
+            <div className="flex items-end">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={hideEmptyAuctions}
+                  onChange={(e) => setHideEmptyAuctions(e.target.checked)}
+                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                />
+                <span className="text-sm font-medium text-gray-700">Hide empty</span>
+              </label>
+            </div>
           </div>
         </CardContent>
       </Card>
 
       <div className="text-sm text-gray-500 mb-4">
-        {loading ? "Loading..." : `${auctions.length} auctions found`}
+        {loading ? "Loading..." : `${filteredAuctions.length} auctions found`}
       </div>
 
       {loading ? (
         <PageLoadingSpinner />
-      ) : auctions.length === 0 ? (
+      ) : filteredAuctions.length === 0 ? (
         <EmptyState title="No auctions found" />
       ) : (
         <div className="space-y-4">
-          {auctions.map((auction) => (
+          {filteredAuctions.map((auction) => (
             <Card key={auction.id} hover>
               <CardContent>
                 <div className="flex justify-between items-start">
