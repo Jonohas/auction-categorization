@@ -60,7 +60,7 @@ A web application for scraping auction websites and automatically categorizing i
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd vibed-auction-specification
+   cd auction-categorization
    ```
 
 2. **Install dependencies**
@@ -75,10 +75,8 @@ A web application for scraping auction websites and automatically categorizing i
 3. **Set up the database**
    ```bash
    # Generate Prisma client and run migrations
-   npx prisma migrate dev
-
-   # Or with bun
-   bun prisma migrate dev
+   bun run prisma-generate
+   cd packages/server && bunx prisma migrate dev
    ```
 
 4. **Configure environment** (optional)
@@ -128,31 +126,22 @@ You can also configure using environment variables:
 Start both backend and frontend in development mode:
 
 ```bash
-# Terminal 1: Start backend
-bun run dev:server
+# Start both client and server concurrently
+bun run dev
 
-# Terminal 2: Start frontend
-bun run dev:client
-```
-
-Or start them separately:
-
-```bash
-# Start backend with file watching
-bun run --watch src/server/index.ts
-
-# Start frontend development server
-bun run dev:client
+# Or start them separately:
+bun run dev:server    # Backend only
+bun run dev:client    # Frontend only
 ```
 
 ### Production Build
 
 ```bash
-# Build frontend
-bun run build:client
+# Build server
+cd packages/server && bun run build
 
 # Start production server
-bun run start
+cd packages/server && bun run start
 ```
 
 ### Access the Application
@@ -238,33 +227,51 @@ export AI_AZURE_DEPLOYMENT="gpt-4.1-mini"
 
 ## Project Structure
 
+This is a **Bun workspace monorepo** with separate client and server packages.
+
 ```
-vibed-auction-specification/
-├── config/
-│   └── config.toml          # Application configuration
+auction-categorization/
+├── packages/
+│   ├── client/                      # React frontend
+│   │   ├── src/
+│   │   │   ├── app.tsx              # Main React app with routing
+│   │   │   ├── main.tsx             # React entry point
+│   │   │   ├── pages/               # Page components
+│   │   │   │   ├── HomePage.tsx
+│   │   │   │   ├── AuctionsPage.tsx
+│   │   │   │   ├── AuctionDetailPage.tsx
+│   │   │   │   ├── CategoriesPage.tsx
+│   │   │   │   ├── CategoryDetailPage.tsx
+│   │   │   │   └── ScrapingPage.tsx
+│   │   │   └── components/          # Reusable UI components
+│   │   ├── package.json
+│   │   ├── vite.config.ts
+│   │   └── tailwind.config.ts
+│   └── server/                      # Express backend
+│       ├── src/
+│       │   ├── index.ts             # Express server entry
+│       │   ├── routes/
+│       │   │   └── api.ts           # API route handlers
+│       │   ├── services/
+│       │   │   ├── aiCategorization.ts   # AI categorization logic
+│       │   │   ├── aiProbability.ts      # AI probability scoring
+│       │   │   └── scrapingService.ts    # Web scraping service
+│       │   ├── scrapers/            # Web scraper implementations
+│       │   │   └── bopaScraper.ts
+│       │   └── lib/
+│       │       ├── config.ts        # Configuration loader
+│       │       ├── db.ts            # Prisma client
+│       │       └── sanitization.ts
+│       └── package.json
 ├── prisma/
-│   ├── schema.prisma        # Database schema
-│   ├── dev.db              # SQLite database
-│   └── migrations/         # Database migrations
-├── src/
-│   ├── app.tsx             # Main React app with routing
-│   ├── main.tsx            # React entry point
-│   ├── server/
-│   │   ├── index.ts        # Express server entry
-│   │   ├── lib/
-│   │   │   ├── config.ts   # Configuration loader
-│   │   │   ├── db.ts       # Prisma client
-│   │   │   └── sanitization.ts
-│   │   ├── routes/
-│   │   │   └── api.ts      # API route handlers
-│   │   └── services/
-│   │       ├── aiCategorization.ts  # AI categorization logic
-│   │       ├── aiProbability.ts     # AI probability scoring
-│   │       └── scrapingService.ts   # Web scraping service
-│   └── routes/             # TanStack Router routes
-├── .gitignore
-├── package.json
-├── tsconfig.json
+│   ├── schema.prisma                # Database schema
+│   ├── dev.db                       # SQLite database
+│   └── migrations/                  # Database migrations
+├── config/
+│   └── config.toml                  # Application configuration
+├── docs/
+│   └── domain-model.md              # Domain model documentation
+├── package.json                     # Root workspace configuration
 └── README.md
 ```
 
@@ -280,7 +287,7 @@ lsof -ti:3000 | xargs kill -9
 cat config/config.toml
 
 # Check database
-npx prisma db push
+cd packages/server && bunx prisma db push
 ```
 
 ### Frontend won't start
@@ -290,8 +297,8 @@ npx prisma db push
 lsof -ti:5173 | xargs kill -9
 
 # Reinstall dependencies
-rm -rf node_modules package-lock.json
-npm install
+rm -rf node_modules bun.lockb
+bun install
 ```
 
 ### AI Categorization not working
@@ -313,7 +320,7 @@ curl -s -X POST "http://localhost:3000/api/categorizeItem" \
 ```bash
 # Reset database (WARNING: loses all data)
 rm prisma/dev.db
-npx prisma migrate dev --name init
+cd packages/server && bunx prisma migrate dev --name init
 ```
 
 ## License
