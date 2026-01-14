@@ -162,35 +162,6 @@ export class BopaScraper implements Scraper {
         const html = await fetchHtml(pageUrl);
         const $ = cheerio.load(html);
 
-        // Extract title (from first page only)
-        let title = "BOPA Auction";
-        if (pageIndex === 1) {
-          title = $("h1").first().text().trim() ||
-            $(".auction-title, .title-auction").first().text().trim() ||
-            $("title").text().trim().replace(" | BOPA Veilingen", "") ||
-            "BOPA Auction";
-        }
-
-        // Extract description (from first page only)
-        let description = "";
-        if (pageIndex === 1) {
-          description = $(".auction-description, .description, [class*='description']").first().text().trim() || "";
-        }
-
-        // Extract end date (from first page only)
-        let endDate: Date | undefined;
-        if (pageIndex === 1) {
-          // Look for closing date in the lot items
-          const closingText = $(".auction-info, [class*='closing'], [class*='end'], .timer").first().text();
-          if (closingText) {
-            const dateMatch = closingText.match(/(\d{2})[-/.](\d{2})[-/.](\d{4})\s*(?:om|:)?\s*(\d{2}):(\d{2})/);
-            if (dateMatch) {
-              const [, day, month, year, hour, minute] = dateMatch;
-              endDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute));
-            }
-          }
-        }
-
         // Scrape lots/items from this page
         const pageItems = this.parseAuctionItems($, pageUrl, auctionUrl);
         allItems.push(...pageItems);
@@ -217,7 +188,6 @@ export class BopaScraper implements Scraper {
     // Get title and description from first page if we have items
     let finalTitle = "BOPA Auction";
     let finalDescription = "";
-    let finalEndDate: Date | undefined;
 
     if (allItems.length > 0) {
       try {
@@ -234,7 +204,6 @@ export class BopaScraper implements Scraper {
       url: auctionUrl,
       title: finalTitle,
       description: finalDescription,
-      endDate: finalEndDate,
       items: allItems,
     };
   }
@@ -246,7 +215,7 @@ export class BopaScraper implements Scraper {
     // Determine current page number from URL
     let currentPageNum = 1;
     const currentPageMatch = currentPageUrl.match(/[?&]page=(\d+)/i);
-    if (currentPageMatch) {
+    if (currentPageMatch && currentPageMatch[1]) {
       currentPageNum = parseInt(currentPageMatch[1], 10);
     }
 
@@ -277,10 +246,13 @@ export class BopaScraper implements Scraper {
       if (href) {
         const pageMatch = href.match(/[?&]page=(\d+)|\/page\/(\d+)|[?&]p=(\d+)/i);
         if (pageMatch) {
-          const pageNum = parseInt(pageMatch[1] || pageMatch[2] || pageMatch[3], 10);
-          // Look for the next sequential page number
-          if (pageNum === nextPageNum) {
-            nextPageUrl = makeAbsoluteUrl(currentPageUrl, href);
+          const matchedPage = pageMatch[1] ?? pageMatch[2] ?? pageMatch[3];
+          if (matchedPage) {
+            const pageNum = parseInt(matchedPage, 10);
+            // Look for the next sequential page number
+            if (pageNum === nextPageNum) {
+              nextPageUrl = makeAbsoluteUrl(currentPageUrl, href);
+            }
           }
         }
       }
@@ -362,7 +334,7 @@ export class BopaScraper implements Scraper {
         let bidCount: number | undefined;
         const bidText = $el.find(".auction-info").text();
         const bidMatch = bidText.match(/(\d+)\s*bod/i);
-        if (bidMatch) {
+        if (bidMatch && bidMatch[1]) {
           bidCount = parseInt(bidMatch[1], 10);
         }
 
@@ -372,7 +344,9 @@ export class BopaScraper implements Scraper {
         const dateMatch = closingText.match(/Sluit op\s+(\d{2})[-/.](\d{2})[-/.](\d{4})\s*(?:om|:)?\s*(\d{2}):(\d{2})/i);
         if (dateMatch) {
           const [, day, month, year, hour, minute] = dateMatch;
-          endDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute));
+          if (day && month && year && hour && minute) {
+            endDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute));
+          }
         }
 
         items.push({
