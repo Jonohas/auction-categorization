@@ -1,5 +1,6 @@
 import { prisma } from "../lib/db";
-import { scraperFactory, ScrapedAuction, ScrapedAuctionItem } from "../scrapers";
+import { scraperFactory } from "../scrapers";
+import type { ScrapedAuction, ScrapedAuctionItem } from "../scrapers";
 import { loadConfig, getScrapersFromConfig } from "../lib/config";
 import type { Scraper } from "@prisma/client";
 

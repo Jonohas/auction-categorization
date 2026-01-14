@@ -1,10 +1,10 @@
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 import { prisma } from "../lib/db";
 import { scrapeWebsite, scrapeAllWebsites, getScrapers, triggerScraperScrape, enableScraper, disableScraper } from "../services/scrapingService";
 import { scraperFactory, makeAbsoluteUrl } from "../scrapers";
 import { BopaScraper } from "../scrapers/bopaScraper";
 import { sanitizeId, sanitizeSearchQuery, sanitizeProbability, sanitizeUrl } from "../lib/sanitization";
-import { categorizeItem, categorizeItems, categorizeItemsBulk, categorizeAuctionItems, CategorizationResult } from "../services/aiCategorization";
+import { categorizeItem, categorizeItems, categorizeItemsBulk, categorizeAuctionItems } from "../services/aiCategorization";
 
 export const apiHandlers = {
   // WebSites (alias for getScrapers)
@@ -336,7 +336,8 @@ export const apiHandlers = {
 
       // Generate a name from the URL
       const hostname = new URL(sanitizedUrl).hostname.replace("www.", "");
-      const name = hostname.split(".")[0].charAt(0).toUpperCase() + hostname.split(".")[0].slice(1);
+      const namePart = hostname.split(".")[0] ?? "";
+      const name = namePart.charAt(0).toUpperCase() + namePart.slice(1);
 
       const scraper = await prisma.scraper.create({
         data: {

@@ -194,7 +194,8 @@ export class ScraperFactory {
         return scraper;
       }
     }
-    return this.scrapers[this.scrapers.length - 1]; // Return generic scraper as fallback
+    // Return generic scraper as fallback (always exists since we initialize it in constructor)
+    return this.scrapers[this.scrapers.length - 1]!;
   }
 
   getAllScrapers(): Scraper[] {
