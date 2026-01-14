@@ -4,7 +4,7 @@ import { scrapeWebsite, scrapeAllWebsites, getScrapers, triggerScraperScrape, en
 import { scraperFactory, makeAbsoluteUrl } from "../scrapers";
 import { BopaScraper } from "../scrapers/bopaScraper";
 import { sanitizeId, sanitizeSearchQuery, sanitizeProbability, sanitizeUrl } from "../lib/sanitization";
-import { categorizeItem, categorizeItems, categorizeAuctionItems, CategorizationResult } from "../services/aiCategorization";
+import { categorizeItem, categorizeItems, categorizeItemsBulk, categorizeAuctionItems, CategorizationResult } from "../services/aiCategorization";
 
 export const apiHandlers = {
   // WebSites (alias for getScrapers)
@@ -876,13 +876,13 @@ export const apiHandlers = {
   },
 
   /**
-   * Categorize multiple items by IDs using AI
+   * Categorize multiple items by IDs using AI (bulk processing)
    * POST /api/categorizeItems
-   * Body: { itemIds: string[] }
+   * Body: { itemIds: string[], saveResults?: boolean }
    */
   categorizeItems: async (req: Request, res: Response) => {
     try {
-      const { itemIds } = req.body as { itemIds?: string[] };
+      const { itemIds, saveResults = true } = req.body as { itemIds?: string[]; saveResults?: boolean };
 
       if (!itemIds || !Array.isArray(itemIds) || itemIds.length === 0) {
         return res.status(400).json({ error: "Item IDs array is required" });
@@ -915,8 +915,8 @@ export const apiHandlers = {
         return res.status(400).json({ error: "No categories defined" });
       }
 
-      // Categorize all items
-      const results = await categorizeItems(
+      // Categorize all items using bulk processing (single AI call per batch)
+      const results = await categorizeItemsBulk(
         items.map((item) => ({
           id: item.id,
           title: item.title,
@@ -925,7 +925,47 @@ export const apiHandlers = {
         categories
       );
 
-      res.json({ results });
+      // Optionally save results to the database
+      if (saveResults) {
+        for (const result of results) {
+          if (result.probabilities.length > 0) {
+            // Delete existing probabilities for this item
+            await prisma.categoryProbability.deleteMany({
+              where: { itemId: result.itemId },
+            });
+
+            // Create new probabilities
+            await prisma.categoryProbability.createMany({
+              data: result.probabilities.map((p) => ({
+                itemId: result.itemId,
+                categoryId: p.categoryId,
+                probability: p.probability,
+              })),
+            });
+
+            // Set main category to the one with highest probability only if >= 50%
+            const highestProbability = result.probabilities.reduce((max, p) =>
+              p.probability > max.probability ? p : max
+            );
+
+            // Only set main category if probability is above 50%, otherwise clear it
+            await prisma.auctionItem.update({
+              where: { id: result.itemId },
+              data: {
+                mainCategoryId: highestProbability.probability >= 0.5
+                  ? highestProbability.categoryId
+                  : null,
+              },
+            });
+          }
+        }
+      }
+
+      res.json({ 
+        itemCount: results.length,
+        results,
+        saved: saveResults,
+      });
     } catch (error) {
       console.error("Error categorizing items:", error);
       res.status(500).json({ error: "Failed to categorize items" });
