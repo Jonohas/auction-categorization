@@ -1,7 +1,7 @@
 import express from "express";
 import { loadConfig } from "./lib/config";
 import { ensureSystemCategories, ensureConfigScrapers } from "./lib/db";
-import { apiHandlers } from "./routes/api";
+import * as api from "./routes/api";
 
 const config = loadConfig();
 const app = express();
@@ -21,38 +21,46 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-// API routes
-app.get("/api/getWebsites", apiHandlers.getWebsites);
-app.get("/api/getScrapers", apiHandlers.getScrapers);
-app.post("/api/addWebsite", apiHandlers.addWebsite);
-app.post("/api/deleteWebsite", apiHandlers.deleteWebsite);
-app.post("/api/scrapeScraper", apiHandlers.scrapeScraper);
-app.post("/api/enableScraper", apiHandlers.enableScraper);
-app.post("/api/disableScraper", apiHandlers.disableScraper);
-app.get("/api/getAuctions", apiHandlers.getAuctions);
-app.get("/api/getAuction", apiHandlers.getAuction);
-app.get("/api/getItems", apiHandlers.getItems);
-app.post("/api/triggerScrape", apiHandlers.triggerScrape);
-app.post("/api/triggerScrapeWebsite", apiHandlers.triggerScrapeWebsite);
-app.get("/api/scrapeBopa", apiHandlers.scrapeBopa);
-app.get("/api/getStats", apiHandlers.getStats);
+// API routes - Websites
+app.get("/api/getWebsites", api.getWebsites);
+app.post("/api/addWebsite", api.addWebsite);
+app.post("/api/deleteWebsite", api.deleteWebsite);
+app.post("/api/triggerScrapeWebsite", api.triggerScrapeWebsite);
+app.get("/api/scrapeBopa", api.scrapeBopa);
 
-// Category endpoints
-app.get("/api/getCategories", apiHandlers.getCategories);
-app.get("/api/getCategory", apiHandlers.getCategory);
-app.post("/api/createCategory", apiHandlers.createCategory);
-app.post("/api/updateCategory", apiHandlers.updateCategory);
-app.post("/api/deleteCategory", apiHandlers.deleteCategory);
-app.get("/api/getItemsByCategory", apiHandlers.getItemsByCategory);
-app.post("/api/setItemMainCategory", apiHandlers.setItemMainCategory);
-app.post("/api/saveItemCategoryProbabilities", apiHandlers.saveItemCategoryProbabilities);
-app.get("/api/getItemCategoryProbabilities", apiHandlers.getItemCategoryProbabilities);
+// API routes - Scrapers
+app.get("/api/getScrapers", api.getScrapers);
+app.post("/api/scrapeScraper", api.scrapeScraper);
+app.post("/api/enableScraper", api.enableScraper);
+app.post("/api/disableScraper", api.disableScraper);
 
-// AI Categorization endpoints
-app.post("/api/categorizeItem", apiHandlers.categorizeItem);
-app.post("/api/categorizeItems", apiHandlers.categorizeItems);
-app.post("/api/categorizeAuction", apiHandlers.categorizeAuction);
-app.get("/api/getItemCategorization", apiHandlers.getItemCategorization);
+// API routes - Auctions
+app.get("/api/getAuctions", api.getAuctions);
+app.get("/api/getAuction", api.getAuction);
+app.post("/api/triggerScrape", api.triggerScrape);
+
+// API routes - Items
+app.get("/api/getItems", api.getItems);
+app.get("/api/getItemCategoryProbabilities", api.getItemCategoryProbabilities);
+
+// API routes - Stats
+app.get("/api/getStats", api.getStats);
+
+// API routes - Categories
+app.get("/api/getCategories", api.getCategories);
+app.get("/api/getCategory", api.getCategory);
+app.post("/api/createCategory", api.createCategory);
+app.post("/api/updateCategory", api.updateCategory);
+app.post("/api/deleteCategory", api.deleteCategory);
+app.get("/api/getItemsByCategory", api.getItemsByCategory);
+app.post("/api/setItemMainCategory", api.setItemMainCategory);
+app.post("/api/saveItemCategoryProbabilities", api.saveItemCategoryProbabilities);
+
+// API routes - AI Categorization
+app.post("/api/categorizeItem", api.categorizeItem);
+app.post("/api/categorizeItems", api.categorizeItems);
+app.post("/api/categorizeAuction", api.categorizeAuction);
+app.get("/api/getItemCategorization", api.getItemCategorization);
 
 // Serve static files in production
 if (process.env.NODE_ENV === "production") {
