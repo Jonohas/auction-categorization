@@ -9,9 +9,9 @@ import {
 } from "../components";
 
 interface DatabaseStats {
-  auctions: number;
-  auctionItems: number;
-  categoryProbabilities: number;
+  auctionCount: number;
+  itemCount: number;
+  categoryProbabilityCount: number;
 }
 
 const DatabaseIcon = () => (
@@ -40,7 +40,7 @@ export function DatabasePage() {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch("/api/getDatabaseStats");
+      const response = await fetch("/api/getStats");
       const data = await response.json();
       setStats(data);
     } catch (err) {
@@ -122,19 +122,19 @@ export function DatabasePage() {
       id: "auctions",
       name: "Auctions",
       description: "All auction records scraped from websites",
-      count: stats?.auctions ?? 0,
+      count: stats?.auctionCount ?? 0,
     },
     {
       id: "auctionItems",
       name: "Auction Items",
       description: "Individual items within auctions",
-      count: stats?.auctionItems ?? 0,
+      count: stats?.itemCount ?? 0,
     },
     {
       id: "categoryProbabilities",
       name: "Category Probabilities",
       description: "AI-generated category probability scores for items",
-      count: stats?.categoryProbabilities ?? 0,
+      count: stats?.categoryProbabilityCount ?? 0,
     },
   ];
 

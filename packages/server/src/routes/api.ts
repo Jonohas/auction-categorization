@@ -419,24 +419,20 @@ export const apiHandlers = {
   // Stats
   getStats: async (req: Request, res: Response) => {
     try {
-      const [scraperCount, auctionCount, itemCount] = await Promise.all([
+      const [scraperCount, auctionCount, itemCount, categoryProbabilityCount, enabledScrapers, avgProbability] = await Promise.all([
         prisma.scraper.count(),
         prisma.auction.count(),
         prisma.auctionItem.count(),
+        prisma.categoryProbability.count(),
+        prisma.scraper.count({ where: { enabled: true } }),
+        prisma.auction.aggregate({ _avg: { hardwareProbability: true } }),
       ]);
-
-      const avgProbability = await prisma.auction.aggregate({
-        _avg: { hardwareProbability: true },
-      });
-
-      const enabledScrapers = await prisma.scraper.count({
-        where: { enabled: true },
-      });
 
       res.json({
         scraperCount,
         auctionCount,
         itemCount,
+        categoryProbabilityCount,
         avgProbability: avgProbability._avg.hardwareProbability || 0,
         enabledScrapers,
       });
@@ -1121,28 +1117,6 @@ export const apiHandlers = {
   },
 
   // Database Management Endpoints
-
-  /**
-   * Get database table statistics
-   * GET /api/getDatabaseStats
-   */
-  getDatabaseStats: async (req: Request, res: Response) => {
-    try {
-      const [auctionCount, auctionItemCount, categoryProbabilityCount] = await Promise.all([
-        prisma.auction.count(),
-        prisma.auctionItem.count(),
-        prisma.categoryProbability.count(),
-      ]);
-
-      res.json({
-        auctions: auctionCount,
-        auctionItems: auctionItemCount,
-        categoryProbabilities: categoryProbabilityCount,
-      });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch database stats" });
-    }
-  },
 
   /**
    * Wipe specific database tables

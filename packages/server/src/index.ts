@@ -55,7 +55,6 @@ app.post("/api/categorizeAuction", apiHandlers.categorizeAuction);
 app.get("/api/getItemCategorization", apiHandlers.getItemCategorization);
 
 // Database management endpoints
-app.get("/api/getDatabaseStats", apiHandlers.getDatabaseStats);
 app.post("/api/wipeTables", apiHandlers.wipeTables);
 
 // Serve static files in production
