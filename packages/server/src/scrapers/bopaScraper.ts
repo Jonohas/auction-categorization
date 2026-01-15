@@ -30,6 +30,20 @@ function makeAbsoluteUrl(baseUrl: string, relativeUrl: string): string {
   }
 }
 
+type DateRegexArrayResult = RegExpExecArray & {
+  groups: {
+    day: string,
+    month: string,
+    year: string,
+    time: string,
+  },
+} | null;
+type BidCountRegexArrayResult = RegExpExecArray & {
+  groups: {
+    bidCount: string,
+  },
+} | null;
+
 export class BopaScraper implements Scraper {
   name = "BOPA Veilingen";
 
@@ -87,14 +101,7 @@ export class BopaScraper implements Scraper {
     const endDateRegex = /Sluit.*?(?<day>\d\d)-(?<month>\d\d)-(?<year>\d{4}).*?(?<time>\d\d:\d\d)/gm;
 
     const getDate = (regex: RegExp, data: string) => {
-      const { groups } = regex.exec(data) as RegExpExecArray & {
-        groups: {
-          day: string,
-          month: string,
-          year: string,
-          time: string,
-        },
-      } | null ?? {};
+      const { groups } = regex.exec(data) as DateRegexArrayResult ?? {};
 
       return groups
         ? new Date(`${groups.year}-${groups.month}-${groups.day}T${groups.time}`)
@@ -156,139 +163,52 @@ export class BopaScraper implements Scraper {
    * BOPA uses .auction-item.data-1-lot for main lots
    * NOTE: We explicitly exclude "aanbevolen" (recommended) items as they are from other auctions
    */
-  private parseAuctionItems($: cheerio.CheerioAPI, auctionBaseUrl: string): ScrapedAuctionItem[] {
-    const items: ScrapedAuctionItem[] = [];
-    const seenUrls = new Set<string>();
-
-    // Primary selector: BOPA's main lot structure
-    // <div class='auction-item data-1-lot'> inside .lijst-veilingen
-    // IMPORTANT: We exclude .aanbevolen section which contains "recommended" items from OTHER auctions
-    const lotElements = $(".lijst-veilingen .auction-item.data-1-lot:not(.aanbevolen *), .auction-item.data-1-lot:not(.aanbevolen *)");
-
-    if (lotElements.length > 0) {
-      console.log(`    Found ${lotElements.length} lots with .auction-item.data-1-lot selector`);
-      lotElements.each((_, element) => {
-        const $el = $(element);
-
-        // Skip if this element is inside an "aanbevolen" section
-        if ($el.closest(".aanbevolen, [class*='aanbevolen'], section[class*='advised']").length > 0) {
-          console.log(`    Skipping aanbevolen (recommended) item`);
-          return;
-        }
-
-        // Find the link to the lot detail page
-        // Links are in .auction-image.meer-info-link and h5 > a.meer-info-link
-        const link = $el.find("a.meer-info-link[href*='/lot/']").first();
-        const href = link.attr("href") || "";
-
-        if (!href) return;
-
-        const url = makeAbsoluteUrl(auctionBaseUrl, href);
-
-        // Check for duplicate
-        if (seenUrls.has(url)) return;
-        seenUrls.add(url);
-
-        // Extract title from h5 > a
-        const titleEl = $el.find("h5 a.meer-info-link, h4 a.meer-info-link");
-        let title = titleEl.text().trim();
-
-        if (!title) {
-          // Fallback to link text or parent text
-          title = link.text().trim() || $el.clone().children().remove().end().text().trim().substring(0, 200);
-        }
-
-        if (!title) return;
-
-        // Extract image URL
-        const imgEl = $el.find("img.auction-image, img.img-lot-listitem");
-        let imageUrl = imgEl.first().attr("src") || undefined;
-
-        // Clean up image URL if it has onerror handler
-        if (imageUrl && imageUrl.includes("onerror=")) {
-          imageUrl = undefined;
-        }
-
-        // Extract current price from .bid-amount
-        let currentPrice: number | undefined;
-        const priceEl = $el.find(".bid-amount, [class*='bid-amount']");
-        if (priceEl.length > 0) {
-          const priceText = priceEl.text().trim();
-          const priceMatch = priceText.match(/[\d.,]+/);
-          if (priceMatch) {
-            currentPrice = parseFloat(priceMatch[0].replace(",", "."));
-          }
-        }
-
-        // Extract bid count from auction-info
-        let bidCount: number | undefined;
-        const bidText = $el.find(".auction-info").text();
-        const bidMatch = bidText.match(/(\d+)\s*bod/i);
-        if (bidMatch && bidMatch[1]) {
-          bidCount = parseInt(bidMatch[1], 10);
-        }
-
-        items.push({
-          url,
-          title: title.substring(0, 500),
-          imageUrl,
-          currentPrice,
-          bidCount,
-        });
-      });
-
-      return items;
+  private parseAuctionItems($: cheerio.CheerioAPI, baseUrl: string): ScrapedAuctionItem[] {
+    const lotElements = $(".auction-item");
+    if (lotElements.length === 0) {
+      return [];
     }
 
-    // Fallback: Look for any lot links on the page
-    // IMPORTANT: We explicitly skip any items from "aanbevolen" or "advised" sections
-    console.log(`    No .auction-item.data-1-lot found, looking for any /lot/ links (excluding aanbevolen)`);
+    console.log(`    Found ${lotElements.length} lots with .auction-item.data-1-lot selector`);
+    const items = lotElements.map((_, element): ScrapedAuctionItem | null => {
+      const $el = $(element);
 
-    // First, collect all aanbevolen lot URLs to exclude
-    const advisedLotUrls = new Set<string>();
-    $(".aanbevolen a[href*='/lot/'], [class*='aanbevolen'] a[href*='/lot/'], figure.data-1-advised-lot a[href*='/lot/']").each((_, element) => {
-      const href = $(element).attr("href");
-      if (href) {
-        const url = makeAbsoluteUrl(auctionBaseUrl, href);
-        advisedLotUrls.add(url);
+      // find nearest auction lot link
+      const href = $el.find("a").first().attr("href");
+      if (!href) {
+        return null;
       }
-    });
-    console.log(`    Found ${advisedLotUrls.size} aanbevolen (recommended) lot URLs to exclude`);
+      const url = makeAbsoluteUrl(baseUrl, href);
 
-    const lotLinks = $("a[href*='/lot/']");
-    console.log(`    Found ${lotLinks.length} lot links total`);
-
-    lotLinks.each((_, element) => {
-      const href = $(element).attr("href");
-      if (href) {
-        const url = makeAbsoluteUrl(auctionBaseUrl, href);
-
-        // Skip if this is an aanbevolen (recommended) item from another auction
-        if (advisedLotUrls.has(url)) {
-          console.log(`    Skipping aanbevolen item: ${url.substring(0, 80)}...`);
-          return;
-        }
-
-        if (!seenUrls.has(url)) {
-          seenUrls.add(url);
-
-          const title = $(element).text().trim() ||
-            $(element).closest("figure, div, li").find("figcaption, .title, h3, h4").first().text().trim() ||
-            "Lot";
-
-          const img = $(element).closest("figure, div, li").find("img[src]").first();
-          const imageUrl = img.attr("src") || undefined;
-
-          items.push({
-            url,
-            title: title.substring(0, 500),
-            imageUrl,
-          });
-        }
+      // find nearest h5 title
+      const title = $el.find("h5").text().trim();
+      if (!title) {
+        return null;
       }
-    });
 
-    return items;
+      // find image url, this one could potentially be undefined but that's fine
+      const imageUrl = $el.find("img").first().attr("src");
+
+      // Extract current price from .bid-amount
+      const currentPrice = parseInt($el.find(".bid-amount").text().trim());
+
+      // Extract bid count from auction-info
+      const bidText = $el.find(".auction-info").text();
+      const bidCountRegex = /(?<bidCount>\d+) bod|(\d+) biedingen/gm;
+      const { groups } = bidCountRegex.exec(bidText) as BidCountRegexArrayResult ?? {};
+      const bidCount = parseInt(groups?.bidCount ?? "0");
+
+      return {
+        url,
+        title,
+        description: undefined, // TODO: parse in the future
+        imageUrl,
+        currentPrice,
+        bidCount
+      };
+    }).get();
+
+    return items.filter((val) => val !== null);
   }
 
   getFaviconUrl(websiteUrl: string): string {
