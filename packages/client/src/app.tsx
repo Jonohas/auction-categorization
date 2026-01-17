@@ -7,6 +7,7 @@ import {
   AuctionDetailPage,
   CategoriesPage,
   CategoryDetailPage,
+  DatabasePage,
 } from "./pages";
 
 export default function App() {
@@ -20,6 +21,7 @@ export default function App() {
           <Route path="/auctions/:auctionId" element={<AuctionDetailPage />} />
           <Route path="/categories" element={<CategoriesPage />} />
           <Route path="/categories/:categoryId" element={<CategoryDetailPage />} />
+          <Route path="/database" element={<DatabasePage />} />
         </Routes>
       </Layout>
     </BrowserRouter>
