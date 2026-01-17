@@ -38,3 +38,6 @@ export { categorizeItem } from "./categorization/categorizeItem";
 export { categorizeItems } from "./categorization/categorizeItems";
 export { categorizeAuction } from "./categorization/categorizeAuction";
 export { getItemCategorization } from "./categorization/getItemCategorization";
+
+// Database Management
+export { wipeTables } from "./database/wipeTables";

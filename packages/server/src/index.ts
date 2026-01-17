@@ -62,6 +62,9 @@ app.post("/api/categorizeItems", api.categorizeItems);
 app.post("/api/categorizeAuction", api.categorizeAuction);
 app.get("/api/getItemCategorization", api.getItemCategorization);
 
+// Database management endpoints
+app.post("/api/wipeTables", api.wipeTables);
+
 // Serve static files in production
 if (process.env.NODE_ENV === "production") {
   app.use(express.static("../dist"));

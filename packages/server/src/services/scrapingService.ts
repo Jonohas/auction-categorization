@@ -14,7 +14,7 @@ export interface ScrapeResult {
 
 export async function initializeScrapersFromConfig(): Promise<void> {
   const configScrapers = getScrapersFromConfig();
-  
+
   for (const configScraper of configScrapers) {
     try {
       // Check if scraper already exists
@@ -84,39 +84,21 @@ export async function scrapeWebsite(scraperId: string): Promise<ScrapeResult> {
         // Scrape new items for this auction
         if (itemsCount > 0) {
           for (const item of auction.items) {
-            // Check if item already exists by URL
-            const existingItem = await prisma.auctionItem.findUnique({
-              where: { url: item.url },
-            });
+            const data = {
+              url: item.url,
+              title: item.title,
+              description: item.description,
+              imageUrl: item.imageUrl,
+              currentPrice: item.currentPrice,
+              bidCount: item.bidCount || 0,
+              auctionId: existing.id,
+            };
 
-            if (existingItem) {
-              // Update existing item with new data
-              await prisma.auctionItem.update({
-                where: { id: existingItem.id },
-                data: {
-                  title: item.title,
-                  description: item.description,
-                  imageUrl: item.imageUrl,
-                  currentPrice: item.currentPrice,
-                  bidCount: item.bidCount || 0,
-                  auctionId: existing.id,
-                },
-              });
-            } else {
-              // Create new item
-              await prisma.auctionItem.create({
-                data: {
-                  url: item.url,
-                  title: item.title,
-                  description: item.description,
-                  imageUrl: item.imageUrl,
-                  currentPrice: item.currentPrice,
-                  bidCount: item.bidCount || 0,
-                  hardwareProbability: null,
-                  auctionId: existing.id,
-                },
-              });
-            }
+            await prisma.auctionItem.upsert({
+              where: { id: existing.id },
+              create: data,
+              update: data,
+            });
           }
         }
         continue;
@@ -139,39 +121,18 @@ export async function scrapeWebsite(scraperId: string): Promise<ScrapeResult> {
       // Scrape items for this auction (without probabilities)
       if (auction.items.length > 0) {
         for (const item of auction.items) {
-          // Check if item already exists by URL
-          const existingItem = await prisma.auctionItem.findUnique({
-            where: { url: item.url },
+          await prisma.auctionItem.create({
+            data: {
+              url: item.url,
+              title: item.title,
+              description: item.description,
+              imageUrl: item.imageUrl,
+              currentPrice: item.currentPrice,
+              bidCount: item.bidCount || 0,
+              hardwareProbability: null,
+              auctionId: newAuction.id,
+            },
           });
-
-          if (existingItem) {
-            // Update existing item (may have moved to a different auction)
-            await prisma.auctionItem.update({
-              where: { id: existingItem.id },
-              data: {
-                title: item.title,
-                description: item.description,
-                imageUrl: item.imageUrl,
-                currentPrice: item.currentPrice,
-                bidCount: item.bidCount || 0,
-                auctionId: newAuction.id,
-              },
-            });
-          } else {
-            // Create new item
-            await prisma.auctionItem.create({
-              data: {
-                url: item.url,
-                title: item.title,
-                description: item.description,
-                imageUrl: item.imageUrl,
-                currentPrice: item.currentPrice,
-                bidCount: item.bidCount || 0,
-                hardwareProbability: null,
-                auctionId: newAuction.id,
-              },
-            });
-          }
         }
       }
 
