@@ -7,7 +7,8 @@
     "dev": "bun --filter '@Jonohas/*' dev",
     "dev:client": "bun --filter @Jonohas/auction-scraper-client dev",
     "dev:server": "bun --filter @Jonohas/auction-scraper-server dev",
-    "prisma-generate": "bun --filter @Jonohas/auction-scraper-server prisma"
+    "prisma-generate": "bun --filter @Jonohas/auction-scraper-server prisma",
+    "prisma-migrate": "bun --filter @Jonohas/auction-scraper-server prisma-migrate"
   },
   "workspaces": [
     "packages/*"

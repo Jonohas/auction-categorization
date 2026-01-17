@@ -22,7 +22,8 @@
     "build": "bun build src/index.ts",
     "start": "bun run dist/index.js",
     "typecheck": "tsc --noEmit",
-    "prisma": "bunx prisma generate"
+    "prisma": "bunx prisma generate",
+    "prisma-migrate": "bunx prisma migrate dev"
   },
   "dependencies": {
     "cheerio": "catalog:",
