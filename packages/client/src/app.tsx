@@ -5,6 +5,7 @@ import {
   ScrapingPage,
   AuctionsPage,
   AuctionDetailPage,
+  AllItemsPage,
   CategoriesPage,
   CategoryDetailPage,
   DatabasePage,
@@ -19,6 +20,7 @@ export default function App() {
           <Route path="/scraping" element={<ScrapingPage />} />
           <Route path="/auctions" element={<AuctionsPage />} />
           <Route path="/auctions/:auctionId" element={<AuctionDetailPage />} />
+          <Route path="/items" element={<AllItemsPage />} />
           <Route path="/categories" element={<CategoriesPage />} />
           <Route path="/categories/:categoryId" element={<CategoryDetailPage />} />
           <Route path="/database" element={<DatabasePage />} />

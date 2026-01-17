@@ -12,3 +12,5 @@ export { FormField, TextInput, TextArea, SelectInput } from "./FormInput";
 export { StatCard } from "./StatCard";
 export { ItemSelectionCheckbox } from "./ItemSelectionCheckbox";
 export { BulkActionToolbar } from "./BulkActionToolbar";
+export { Pagination } from "./Pagination";
+export { MultiSelectDropdown } from "./MultiSelectDropdown";

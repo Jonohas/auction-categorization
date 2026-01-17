@@ -41,6 +41,8 @@ app.post("/api/triggerScrape", api.triggerScrape);
 
 // API routes - Items
 app.get("/api/getItems", api.getItems);
+app.get("/api/getAllItems", api.getAllItems);
+app.get("/api/getFilterOptions", api.getFilterOptions);
 app.get("/api/getItemCategoryProbabilities", api.getItemCategoryProbabilities);
 
 // API routes - Stats
