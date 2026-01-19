@@ -95,7 +95,7 @@ export async function scrapeWebsite(scraperId: string): Promise<ScrapeResult> {
             };
 
             await prisma.auctionItem.upsert({
-              where: { id: existing.id },
+              where: { url: item.url },
               create: data,
               update: data,
             });
