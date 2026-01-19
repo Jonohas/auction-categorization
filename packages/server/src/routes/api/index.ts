@@ -21,6 +21,8 @@ export { triggerScrape } from "./auctions/triggerScrape";
 
 // Items
 export { getItems } from "./items/getItems";
+export { getAllItems } from "./items/getAllItems";
+export { getFilterOptions } from "./items/getFilterOptions";
 export { getItemCategoryProbabilities } from "./items/getItemCategoryProbabilities";
 
 // Categories

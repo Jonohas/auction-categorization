@@ -9,7 +9,7 @@ export function ItemSelectionCheckbox({ itemId }: ItemSelectionCheckboxProps) {
 
   return (
     <div
-      className="absolute top-2 left-2 z-10 cursor-pointer"
+      className="absolute top-2 left-2 cursor-pointer"
       onClick={(e) => e.stopPropagation()}
     >
       <input
