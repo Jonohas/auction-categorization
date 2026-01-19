@@ -194,7 +194,7 @@ export class BopaScraper implements Scraper {
 
       // Extract bid count from auction-info
       const bidText = $el.find(".auction-info").text();
-      const bidCountRegex = /(?<bidCount>\d+) bod|(\d+) biedingen/gm;
+      const bidCountRegex = /(?<bidCount>\d+) bod|(?<bidCount>\d+) biedingen/gm;
       const { groups } = bidCountRegex.exec(bidText) as BidCountRegexArrayResult ?? {};
       const bidCount = parseInt(groups?.bidCount ?? "0");
 
