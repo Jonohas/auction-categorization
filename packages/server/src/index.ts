@@ -1,4 +1,5 @@
 import express from "express";
+import path from "path";
 import { loadConfig } from "./lib/config";
 import { ensureSystemCategories, ensureConfigScrapers } from "./lib/db";
 import * as api from "./routes/api";
@@ -67,15 +68,20 @@ app.get("/api/getItemCategorization", api.getItemCategorization);
 // Database management endpoints
 app.post("/api/wipeTables", api.wipeTables);
 
-// Serve static files in production
 if (process.env.NODE_ENV === "production") {
-  app.use(express.static("../dist"));
-  app.get("*", (req, res) => {
-    res.sendFile("../dist/index.html");
+  const distPath = path.join(process.env.RUNTIME_DIR || "/app", "./dist");
+  app.use(express.static(distPath));
+  app.get("/{*splat}", (req, res) => {
+    res.sendFile(path.join(distPath, "index.html"));
   });
 }
 
 const PORT = config.server.port || 3000;
 app.listen(PORT, () => {
   console.log(`Auction Scraper server running on http://localhost:${PORT}`);
+});
+
+process.on("SIGTERM", () => {
+  console.log("Received SIGTERM, most likely from docker.");
+  process.exit(0);
 });
