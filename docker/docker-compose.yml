@@ -1,0 +1,13 @@
+services:
+  auction-categorization:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - 3000:3000
+    environment:
+      - TZ=Europe/Brussels
+    restart: unless-stopped
+    volumes:
+      - ./config:/app/config
+      - ./prisma:/app/prisma

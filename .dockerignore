@@ -1,0 +1,9 @@
+.claude/
+node_modules/
+
+config.toml
+.env
+*.db
+
+docs/
+README.md

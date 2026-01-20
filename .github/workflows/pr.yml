@@ -1,0 +1,109 @@
+name: PR Build
+
+on:
+  pull_request:
+    paths:
+      - 'src/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}
+          tags: |
+            type=ref,event=pr
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          push: true
+          platforms: linux/amd64 #,linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Find existing comment
+        uses: peter-evans/find-comment@v3
+        id: find-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: '<!-- pr-build-comment -->'
+
+      - name: Create or update PR comment
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          edit-mode: replace
+          body: |
+            <!-- pr-build-comment -->
+            ## Docker Image Built Successfully
+
+            **Image:** `${{ steps.meta.outputs.tags }}`
+
+            **Commit:** ${{ github.event.pull_request.head.sha }}
+
+            ### Pull the image
+            ```bash
+            docker pull ${{ steps.meta.outputs.tags }}
+            ```
+
+            ### Quick start with docker-compose
+            Create a `docker-compose.yml` file:
+            ```yaml
+            services:
+              auction-categorization:
+                image: ${{ steps.meta.outputs.tags }}
+                ports:
+                  - 3000:3000
+                environment:
+                  - TZ=Europe/Brussels
+                restart: unless-stopped
+                volumes:
+                  - ./config:/app/config
+                  - ./prisma:/app/prisma
+            ```
+
+            Then run:
+            ```bash
+            docker-compose up
+            ```
+
+            ---
+            *Updated at: ${{ github.event.pull_request.updated_at }}*

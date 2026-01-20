@@ -11,7 +11,8 @@
 		"vscode": {
 			"extensions": [
 				"dbaeumer.vscode-eslint",
-				"fill-labs.dependi"
+				"fill-labs.dependi",
+				"qwtel.sqlite-viewer"
 			]
 		}
 	},
