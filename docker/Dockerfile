@@ -17,10 +17,11 @@ WORKDIR /build
 # Copy client source files and root node_modules (for hoisted deps in workspace)
 COPY packages/client/ ./packages/client/
 COPY --from=dependencies /deps/node_modules/ ./node_modules/
+COPY --from=dependencies /deps/packages/client/node_modules ./packages/client/node_modules
 
 WORKDIR /build/packages/client
 
-RUN bunx vite build
+RUN bun run build
 
 FROM base AS backend
 
@@ -32,6 +33,7 @@ WORKDIR /build
 # Copy server source files and root node_modules (for hoisted deps in workspace)
 COPY packages/server/ ./packages/server/
 COPY --from=dependencies /deps/node_modules/ ./node_modules/
+COPY --from=dependencies /deps/packages/server/node_modules ./packages/server/node_modules
 
 WORKDIR /build/packages/server
 
