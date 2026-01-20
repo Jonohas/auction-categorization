@@ -2,8 +2,6 @@ name: PR Build
 
 on:
   pull_request:
-    paths:
-      - 'src/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
