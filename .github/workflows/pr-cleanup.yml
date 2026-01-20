@@ -1,0 +1,46 @@
+name: PR Cleanup
+
+on:
+  pull_request:
+    types: [closed]
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      pull-requests: write
+
+    steps:
+      - uses: dataaxiom/ghcr-cleanup-action@v1
+        with:
+          owner: jonohas
+          packages: auction-categorization
+          delete-tags: pr-${{ github.event.pull_request.number }}
+
+      - name: Find existing comment
+        uses: peter-evans/find-comment@v3
+        id: find-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: '<!-- pr-build-comment -->'
+
+      - name: Update PR comment
+        if: steps.find-comment.outputs.comment-id != ''
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          edit-mode: replace
+          body: |
+            <!-- pr-build-comment -->
+            ## Docker Image Cleaned Up
+
+            The PR Docker image `${{ env.REGISTRY }}/${{ github.repository }}:pr-${{ github.event.pull_request.number }}` has been deleted.
+
+            ---
+            *Cleaned up at: ${{ github.event.pull_request.closed_at }}*
