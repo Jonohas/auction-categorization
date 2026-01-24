@@ -1,8 +1,11 @@
-import { prisma } from "../lib/db";
 import { scraperFactory } from "../scrapers";
-import type { ScrapedAuction, ScrapedAuctionItem } from "../scrapers";
 import { loadConfig, getScrapersFromConfig } from "../lib/config";
-import type { Scraper } from "@prisma/client";
+import { db } from "../db/db";
+import { scrapers, auctions, auctionItem } from "../db/schema";
+import type { InferSelectModel } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
+
+type Scraper = InferSelectModel<typeof scrapers>;
 
 export interface ScrapeResult {
   success: boolean;
@@ -18,19 +21,15 @@ export async function initializeScrapersFromConfig(): Promise<void> {
   for (const configScraper of configScrapers) {
     try {
       // Check if scraper already exists
-      const existingScraper = await prisma.scraper.findUnique({
-        where: { url: configScraper.url },
-      });
+      const existingScraper = await db.select().from(scrapers).where(eq(scrapers.url, configScraper.url)).limit(1);
 
-      if (!existingScraper) {
+      if (existingScraper.length === 0) {
         // Create new scraper from config
-        await prisma.scraper.create({
-          data: {
-            url: configScraper.url,
-            name: configScraper.name,
-            imageUrl: configScraper.image_url,
-            enabled: configScraper.enabled,
-          },
+        await db.insert(scrapers).values({
+          url: configScraper.url,
+          name: configScraper.name,
+          image_url: configScraper.image_url,
+          enabled: configScraper.enabled,
         });
         console.log(`Initialized scraper: ${configScraper.name}`);
       }
@@ -41,17 +40,16 @@ export async function initializeScrapersFromConfig(): Promise<void> {
 }
 
 export async function scrapeWebsite(scraperId: string): Promise<ScrapeResult> {
-  const scraperConfig = await prisma.scraper.findUnique({
-    where: { id: scraperId },
-  });
+  const scraperConfigs = await db.select().from(scrapers).where(eq(scrapers.id, parseInt(scraperId))).limit(1);
+  const scraperConfig = scraperConfigs[0];
 
-  if (!scraperConfig) {
+  if (!scraperConfig || !scraperConfig.url) {
     return {
       success: false,
       scraperId,
       auctionsFound: 0,
       auctionsCreated: 0,
-      error: "Scraper not found",
+      error: "Scraper not found or invalid URL",
     };
   }
 
@@ -63,28 +61,24 @@ export async function scrapeWebsite(scraperId: string): Promise<ScrapeResult> {
 
     for (const auction of scrapedAuctions) {
       // Check if auction already exists
-      const existing = await prisma.auction.findUnique({
-        where: { url: auction.url },
-      });
+      const existingAuctions = await db.select().from(auctions).where(eq(auctions.url, auction.url)).limit(1);
+      const existing = existingAuctions[0];
 
       if (existing) {
         // Update existing auction
-        const itemsCount = auction.items.length;
-        await prisma.auction.update({
-          where: { id: existing.id },
-          data: {
-            title: auction.title,
-            description: auction.description,
-            startDate: auction.startDate,
-            endDate: auction.endDate,
-            itemsCount,
-          },
-        });
+        const itemsCount = auction.items.length.toString();
+        await db.update(auctions).set({
+          title: auction.title,
+          description: auction.description,
+          startDate: auction.startDate,
+          endDate: auction.endDate,
+          itemsCount,
+        }).where(eq(auctions.id, existing.id));
 
         // Scrape new items for this auction
-        if (itemsCount > 0) {
+        if (auction.items.length > 0) {
           for (const item of auction.items) {
-            const data = {
+            await db.insert(auctionItem).values({
               url: item.url,
               title: item.title,
               description: item.description,
@@ -92,46 +86,50 @@ export async function scrapeWebsite(scraperId: string): Promise<ScrapeResult> {
               currentPrice: item.currentPrice,
               bidCount: item.bidCount || 0,
               auctionId: existing.id,
-            };
-
-            await prisma.auctionItem.upsert({
-              where: { url: item.url },
-              create: data,
-              update: data,
+            }).onConflictDoUpdate({
+              target: auctionItem.url,
+              set: {
+                title: item.title,
+                description: item.description,
+                imageUrl: item.imageUrl,
+                currentPrice: item.currentPrice,
+                bidCount: item.bidCount || 0,
+              }
             });
           }
         }
         continue;
       }
 
-      // Create the auction with null probability (will be calculated on demand)
-      const newAuction = await prisma.auction.create({
-        data: {
-          url: auction.url,
-          title: auction.title,
-          description: auction.description,
-          startDate: auction.startDate,
-          endDate: auction.endDate,
-          hardwareProbability: null,
-          itemsCount: auction.items.length,
-          scraperId: scraperConfig.id,
-        },
-      });
+      // Create the auction
+      const newAuctionResult = await db.insert(auctions).values({
+        url: auction.url,
+        title: auction.title,
+        description: auction.description,
+        startDate: auction.startDate,
+        endDate: auction.endDate,
+        itemsCount: auction.items.length.toString(),
+        scraperId: scraperConfig.id,
+      }).returning({ id: auctions.id });
 
-      // Scrape items for this auction (without probabilities)
+      const newAuction = newAuctionResult[0];
+
+      if (!newAuction) {
+        console.error("Failed to create auction");
+        continue;
+      }
+
+      // Scrape items for this auction
       if (auction.items.length > 0) {
         for (const item of auction.items) {
-          await prisma.auctionItem.create({
-            data: {
-              url: item.url,
-              title: item.title,
-              description: item.description,
-              imageUrl: item.imageUrl,
-              currentPrice: item.currentPrice,
-              bidCount: item.bidCount || 0,
-              hardwareProbability: null,
-              auctionId: newAuction.id,
-            },
+          await db.insert(auctionItem).values({
+            url: item.url,
+            title: item.title,
+            description: item.description,
+            imageUrl: item.imageUrl,
+            currentPrice: item.currentPrice,
+            bidCount: item.bidCount || 0,
+            auctionId: newAuction.id,
           });
         }
       }
@@ -140,10 +138,9 @@ export async function scrapeWebsite(scraperId: string): Promise<ScrapeResult> {
     }
 
     // Update scraper's updatedAt
-    await prisma.scraper.update({
-      where: { id: scraperId },
-      data: { updatedAt: new Date() },
-    });
+    await db.update(scrapers).set({
+      updatedAt: new Date(),
+    }).where(eq(scrapers.id, parseInt(scraperId)));
 
     return {
       success: true,
@@ -167,18 +164,16 @@ export async function scrapeAllWebsites(): Promise<ScrapeResult[]> {
   // Initialize scrapers from config first
   await initializeScrapersFromConfig();
 
-  const scrapers = await prisma.scraper.findMany({
-    where: { enabled: true },
-  });
+  const scraperRecords = await db.select().from(scrapers).where(eq(scrapers.enabled, true));
   const results: ScrapeResult[] = [];
 
   const config = loadConfig();
   const maxConcurrent = config.scraping.max_concurrent || 5;
 
   // Process scrapers in batches to respect concurrency limit
-  for (let i = 0; i < scrapers.length; i += maxConcurrent) {
-    const batch = scrapers.slice(i, i + maxConcurrent);
-    const batchResults = await Promise.all((batch as { id: string }[]).map((s) => scrapeWebsite(s.id)));
+  for (let i = 0; i < scraperRecords.length; i += maxConcurrent) {
+    const batch = scraperRecords.slice(i, i + maxConcurrent);
+    const batchResults = await Promise.all(batch.map((s) => scrapeWebsite(s.id.toString())));
     results.push(...batchResults);
   }
 
@@ -186,14 +181,7 @@ export async function scrapeAllWebsites(): Promise<ScrapeResult[]> {
 }
 
 export async function getScrapers(): Promise<Scraper[]> {
-  return await prisma.scraper.findMany({
-    include: {
-      _count: {
-        select: { auctions: true },
-      },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+  return await db.select().from(scrapers).orderBy(desc(scrapers.createdAt));
 }
 
 export async function triggerScraperScrape(scraperId: string): Promise<ScrapeResult> {
@@ -202,10 +190,9 @@ export async function triggerScraperScrape(scraperId: string): Promise<ScrapeRes
 
 export async function enableScraper(scraperId: string): Promise<boolean> {
   try {
-    await prisma.scraper.update({
-      where: { id: scraperId },
-      data: { enabled: true },
-    });
+    await db.update(scrapers).set({
+      enabled: true,
+    }).where(eq(scrapers.id, parseInt(scraperId)));
     return true;
   } catch {
     return false;
@@ -214,10 +201,9 @@ export async function enableScraper(scraperId: string): Promise<boolean> {
 
 export async function disableScraper(scraperId: string): Promise<boolean> {
   try {
-    await prisma.scraper.update({
-      where: { id: scraperId },
-      data: { enabled: false },
-    });
+    await db.update(scrapers).set({
+      enabled: false,
+    }).where(eq(scrapers.id, parseInt(scraperId)));
     return true;
   } catch {
     return false;

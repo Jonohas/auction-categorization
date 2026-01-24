@@ -320,7 +320,7 @@ The backend provides a REST API organized into these categories:
 | Category | Endpoints | Description |
 |----------|-----------|-------------|
 | **Scrapers** | `getScrapers`, `enableScraper`, `disableScraper`, `scrapeScraper`, `triggerScrape` | Manage scraper configurations and trigger scraping |
-| **Auctions** | `getAuctions`, `getAuction`, `getItems` | Browse and filter auctions and items |
+| **Auctions** | `getAuctions`, `index`, `getItems` | Browse and filter auctions and items |
 | **Categories** | `getCategories`, `getCategory`, `createCategory`, `updateCategory`, `deleteCategory`, `getItemsByCategory` | CRUD operations for categories |
 | **AI Categorization** | `categorizeItem`, `categorizeItems`, `categorizeAuction`, `getItemCategorization` | AI-powered item categorization |
 | **Statistics** | `getStats` | Dashboard statistics |

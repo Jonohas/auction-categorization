@@ -333,7 +333,7 @@ All responses return JSON data. Error responses include an `error` field:
 
 ### Get Auction Details
 
-**Endpoint:** `GET /api/getAuction`
+**Endpoint:** `GET /api/index`
 
 **Description:** Returns a single auction with all its items.
 

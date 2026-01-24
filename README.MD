@@ -157,7 +157,7 @@ cd packages/server && bun run start
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/getAuctions` | List all auctions |
-| GET | `/api/getAuction?id=` | Get auction details |
+| GET | `/api/index?id=` | Get auction details |
 | GET | `/api/getItemsByCategory?categoryId=` | Get items by category |
 
 ### Category Endpoints

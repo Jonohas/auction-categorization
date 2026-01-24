@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="index.ts" type="BunRunConfiguration" nameIsGenerated="true">
+    <option name="program" value="src/index.ts" />
+    <option name="workingDirectory" value="$PROJECT_DIR$/packages/server" />
+    <method v="2" />
+  </configuration>
+</component>

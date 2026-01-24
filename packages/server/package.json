@@ -4,15 +4,17 @@
   "type": "module",
   "private": true,
   "devDependencies": {
+    "@prisma/client": "catalog:dev",
     "@types/bun": "catalog:dev",
     "@types/express": "catalog:dev",
+    "@types/node": "catalog:dev",
     "autoprefixer": "catalog:dev",
     "concurrently": "catalog:dev",
+    "drizzle-kit": "^0.31.8",
     "postcss": "catalog:dev",
     "prisma": "catalog:dev",
-    "typescript": "catalog:dev",
-    "@prisma/client": "catalog:dev",
-    "@types/node": "catalog:dev"
+    "tsx": "^4.21.0",
+    "typescript": "catalog:dev"
   },
   "peerDependencies": {
     "typescript": "^5"
@@ -26,7 +28,10 @@
     "prisma-migrate": "bunx prisma migrate dev"
   },
   "dependencies": {
+    "@libsql/client": "^0.17.0",
     "cheerio": "catalog:",
+    "dotenv": "^17.2.3",
+    "drizzle-orm": "^0.45.1",
     "express": "catalog:",
     "openai": "catalog:",
     "toml": "catalog:"
