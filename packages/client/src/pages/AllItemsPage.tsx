@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Card,
   CardContent,
@@ -12,6 +12,7 @@ import {
 import { Pagination } from "../components/Pagination";
 import { MultiSelectDropdown } from "../components/MultiSelectDropdown";
 import { useItemSelectionStore } from "../stores/itemSelectionStore";
+import { useUrlSync, FilterState } from "../hooks/useUrlSync";
 
 interface FilterOptions {
   categories: { id: string; name: string; itemCount: number }[];
@@ -48,12 +49,45 @@ export function AllItemsPage() {
   const [minProbability, setMinProbability] = useState("");
   const [scraperIds, setScraperIds] = useState<string[]>([]);
   const [maxPrice, setMaxPrice] = useState("");
-  const [sortBy, setSortBy] = useState("date");
-  const [sortOrder, setSortOrder] = useState("desc");
-  const [limit, setLimit] = useState("100");
+  const [sortBy, setSortBy] = useState<FilterState["sortBy"]>("date");
+  const [sortOrder, setSortOrder] = useState<FilterState["sortOrder"]>("desc");
+  const [limit, setLimit] = useState<FilterState["limit"]>("100");
 
   const clearSelection = useItemSelectionStore((state) => state.clearSelection);
   const selectAll = useItemSelectionStore((state) => state.selectAll);
+
+  // Handler to update individual filter values
+  const handleFilterChange = useCallback((updates: Partial<FilterState>) => {
+    if (updates.search !== undefined) setSearch(updates.search);
+    if (updates.categoryIds !== undefined) setCategoryIds(updates.categoryIds);
+    if (updates.minProbability !== undefined) setMinProbability(updates.minProbability);
+    if (updates.scraperIds !== undefined) setScraperIds(updates.scraperIds);
+    if (updates.maxPrice !== undefined) setMaxPrice(updates.maxPrice);
+    if (updates.sortBy !== undefined) setSortBy(updates.sortBy);
+    if (updates.sortOrder !== undefined) setSortOrder(updates.sortOrder);
+    if (updates.limit !== undefined) setLimit(updates.limit);
+  }, []);
+
+  // Current filter state for URL sync
+  const currentFilters: FilterState = {
+    search,
+    categoryIds,
+    minProbability,
+    scraperIds,
+    maxPrice,
+    sortBy,
+    sortOrder,
+    limit,
+  };
+
+  // Sync filters with URL
+  const hasLoadedOptions = filterOptions.categories.length > 0 || filterOptions.scrapers.length > 0;
+  useUrlSync(
+    currentFilters,
+    filterOptions,
+    handleFilterChange,
+    hasLoadedOptions
+  );
 
   // Debounce search input
   useEffect(() => {

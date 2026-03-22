@@ -28,13 +28,13 @@ Represents a website source that is monitored for auctions.
 
 | Field | Type | Constraints | Description |
 |-------|------|-------------|-------------|
-| id | String | @id, @default(cuid()) | Unique identifier |
-| url | String | @unique | Website URL to scrape |
-| name | String | - | Display name for the scraper |
-| imageUrl | String? | optional | Favicon/logo URL for display |
-| enabled | Boolean | @default(true) | Whether scraping is enabled |
-| createdAt | DateTime | @default(now()) | Record creation timestamp |
-| updatedAt | DateTime | @updatedAt | Last update timestamp |
+| id | integer | @id, primary key, autoincrement | Unique identifier |
+| url | text | @unique | Website URL to scrape |
+| name | text | not null | Display name for the scraper |
+| image_url | text | optional | Favicon/logo URL for display |
+| enabled | boolean | default: true | Whether scraping is enabled |
+| created_at | integer | timestamp | Record creation timestamp |
+| updated_at | integer | timestamp | Last update timestamp |
 
 **Relationships:**
 - Has many `Auction` records (cascade delete)
@@ -45,22 +45,21 @@ Represents an auction listing discovered from a scraper.
 
 | Field | Type | Constraints | Description |
 |-------|------|-------------|-------------|
-| id | String | @id, @default(cuid()) | Unique identifier |
-| url | String | @unique | Auction page URL |
-| title | String | - | Auction title |
-| description | String? | optional | Auction description |
-| startDate | DateTime? | optional | Auction start time |
-| endDate | DateTime? | optional | Auction end time |
-| hardwareProbability | Float? | optional | AI-calculated probability of containing hardware (0-1) |
-| itemsCount | Int | @default(0) | Cached count of items in this auction |
-| scraperId | String | @index | Foreign key to Scraper |
-| createdAt | DateTime | @default(now()) | Record creation timestamp |
-| updatedAt | DateTime | @updatedAt | Last update timestamp |
+| id | integer | @id, primary key, autoincrement | Unique identifier |
+| url | text | @unique | Auction page URL |
+| title | text | not null | Auction title |
+| description | text | optional | Auction description |
+| startDate | integer | timestamp, optional | Auction start time |
+| endDate | integer | timestamp, optional | Auction end time |
+| itemsCount | text | not null | Cached count of items in this auction |
+| scraperId | integer | foreign key (scrapers.id), indexed | Reference to Scraper |
+| created_at | integer | timestamp | Record creation timestamp |
+| updated_at | integer | timestamp | Last update timestamp |
 
 **Relationships:**
 - Belongs to one `Scraper`
 - Has many `AuctionItem` records (cascade delete)
-- Indexed on `scraperId` and `hardwareProbability` for query performance
+- Indexed on `scraperId` for query performance
 
 ## AuctionItem
 
@@ -68,18 +67,17 @@ Represents an individual item/lot within an auction.
 
 | Field | Type | Constraints | Description |
 |-------|------|-------------|-------------|
-| id | String | @id, @default(cuid()) | Unique identifier |
-| url | String | @unique | Item lot URL |
-| title | String | - | Item title |
-| description | String? | optional | Item description |
-| imageUrl | String? | optional | Item image URL |
-| currentPrice | Float? | optional | Current bid price |
-| bidCount | Int | @default(0) | Number of bids |
-| hardwareProbability | Float? | optional | AI-calculated probability of hardware (0-1) |
-| mainCategoryId | String? | optional | Foreign key to assigned main Category |
-| auctionId | String | @index | Foreign key to Auction |
-| createdAt | DateTime | @default(now()) | Record creation timestamp |
-| updatedAt | DateTime | @updatedAt | Last update timestamp |
+| id | integer | @id, primary key, autoincrement | Unique identifier |
+| url | text | @unique | Item lot URL |
+| title | text | not null | Item title |
+| description | text | optional | Item description |
+| imageUrl | text | optional | Item image URL |
+| currentPrice | real | optional | Current bid price |
+| bidCount | integer | not null, default: 0 | Number of bids |
+| mainCategoryId | integer | foreign key (categories.id), optional | Reference to assigned main Category |
+| auctionId | integer | foreign key (auctions.id), indexed | Reference to Auction |
+| created_at | integer | timestamp | Record creation timestamp |
+| updated_at | integer | timestamp | Last update timestamp |
 
 **Relationships:**
 - Belongs to one `Auction` (cascade delete)
@@ -88,7 +86,7 @@ Represents an individual item/lot within an auction.
 
 **Notes:**
 - `mainCategoryId` is only set if the highest category probability is >= 50%
-- Indexed on `auctionId`, `hardwareProbability`, and `mainCategoryId`
+- Indexed on `auctionId` and `mainCategoryId`
 
 ## Category
 
@@ -96,19 +94,19 @@ Represents user-defined categories for classifying auction items.
 
 | Field | Type | Constraints | Description |
 |-------|------|-------------|-------------|
-| id | String | @id, @default(cuid()) | Unique identifier |
-| name | String | @unique | Category name (must be unique) |
-| description | String? | optional | Category description |
-| isSystem | Boolean | @default(false) | System categories cannot be deleted/renamed |
-| createdAt | DateTime | @default(now()) | Record creation timestamp |
-| updatedAt | DateTime | @updatedAt | Last update timestamp |
+| id | integer | @id, primary key, autoincrement | Unique identifier |
+| name | text | not null | Category name |
+| description | text | optional | Category description |
+| isSystem | boolean | optional | System categories cannot be deleted/renamed |
+| created_at | integer | timestamp | Record creation timestamp |
+| updated_at | integer | timestamp | Last update timestamp |
 
 **Relationships:**
 - Has many `AuctionItem` via `mainCategoryId`
 - Has many `CategoryProbability` records
 
 **System Categories:**
-- System categories (isSystem = true) are protected and cannot be deleted or renamed
+- System categories (`isSystem = true`) are protected and cannot be deleted or renamed
 - The "Other" category is used as a fallback for items that don't match other categories
 
 ## CategoryProbability
@@ -117,12 +115,12 @@ Stores AI-calculated category probabilities for each item.
 
 | Field | Type | Constraints | Description |
 |-------|------|-------------|-------------|
-| id | String | @id, @default(cuid()) | Unique identifier |
-| probability | Float | - | AI-calculated probability (0-1) |
-| itemId | String | @index, @unique([itemId, categoryId]) | Foreign key to AuctionItem |
-| categoryId | String | @index | Foreign key to Category |
-| createdAt | DateTime | @default(now()) | Record creation timestamp |
-| updatedAt | DateTime | @updatedAt | Last update timestamp |
+| id | integer | @id, primary key, autoincrement | Unique identifier |
+| probability | real | not null | AI-calculated probability (0-1) |
+| categoryId | integer | foreign key (categories.id), indexed | Reference to Category |
+| itemId | integer | foreign key (auctionItem.id), indexed | Reference to AuctionItem |
+| created_at | integer | timestamp | Record creation timestamp |
+| updated_at | integer | timestamp | Last update timestamp |
 
 **Relationships:**
 - Belongs to one `AuctionItem` (cascade delete)
@@ -131,6 +129,69 @@ Stores AI-calculated category probabilities for each item.
 **Constraints:**
 - Unique constraint on `[itemId, categoryId]` prevents duplicate probability records
 - Indexed on `itemId` and `categoryId` for efficient lookups
+
+## Schema Definition (Drizzle ORM)
+
+```typescript
+import { sqliteTable, text, integer, index, real } from "drizzle-orm/sqlite-core";
+
+export const scrapers = sqliteTable("scrapers", {
+    id: integer("id").primaryKey().autoincrement(),
+    url: text("url").unique(),
+    name: text("name").notNull(),
+    image_url: text("image_url"),
+    enabled: integer({mode: 'boolean'}),
+    created_at: integer("created_at"),
+    updated_at: integer("updated_at"),
+});
+
+export const auctions = sqliteTable("auctions", {
+    id: integer("id").primaryKey().autoincrement(),
+    url: text().unique(),
+    title: text("title").notNull(),
+    description: text("description"),
+    startDate: integer({mode: 'timestamp'}),
+    endDate: integer({mode: 'timestamp'}),
+    itemsCount: text("items").notNull(),
+    scraperId: integer("scraper_id").references(() => scrapers.id),
+    created_at: integer("created_at"),
+    updated_at: integer("updated_at"),
+}, (table) => [
+    index("scraper_index").on(table.scraperId)
+]);
+
+export const auctionItem = sqliteTable("auction_items", {
+    id: integer("id").primaryKey().autoincrement(),
+    url: text("url").unique(),
+    title: text("title").notNull(),
+    description: text("description"),
+    imageUrl: text("image_url"),
+    currentPrice: real("current_price"),
+    bidCount: integer("bid_count").notNull().default(0),
+    mainCategoryId: integer("main_category_id").references(() => categories.id),
+    auctionId: integer("auction_id").references(() => auctions.id),
+    created_at: integer("created_at"),
+    updated_at: integer("updated_at"),
+});
+
+export const categories = sqliteTable("categories", {
+    id: integer("id").primaryKey().autoincrement(),
+    name: text("name").notNull(),
+    description: text("description"),
+    isSystem: integer({mode: 'boolean'}),
+    created_at: integer("created_at"),
+    updated_at: integer("updated_at"),
+});
+
+export const categoryProbability = sqliteTable("category_probability", {
+    id: integer("id").primaryKey().autoincrement(),
+    probability: real("probability"),
+    categoryId: integer("category_id").references(() => categories.id),
+    itemId: integer("item_id").references(() => auctionItem.id),
+    created_at: integer("created_at"),
+    updated_at: integer("updated_at"),
+});
+```
 
 ## Data Flow
 
@@ -156,38 +217,27 @@ The application uses a **50% confidence threshold** for automatic category assig
 - Categories below 50% threshold are stored but not assigned as main category
 - Users can manually override the assigned category
 
-## Example Queries
+## Example Queries (Drizzle ORM)
 
 ### Get auctions with items
 ```typescript
-const auctions = await prisma.auction.findMany({
-  include: {
-    scraper: true,
-    items: true,
-  },
-});
+import { db } from "./db/db.ts";
+import { auctions, auctionItem, scrapers } from "./db/schema.ts";
+
+const allAuctions = await db.select().from(auctions);
 ```
 
 ### Get items with category probabilities
 ```typescript
-const items = await prisma.auctionItem.findMany({
-  include: {
-    mainCategory: true,
-    categoryProbabilities: {
-      include: { category: true },
-      orderBy: { probability: 'desc' },
-    },
-  },
-});
+import { eq } from "drizzle-orm";
+import { auctionItem, categoryProbability, categories } from "./db/schema.ts";
+
+const items = await db.select().from(auctionItem);
 ```
 
 ### Get category statistics
 ```typescript
-const categories = await prisma.category.findMany({
-  include: {
-    _count: {
-      select: { items: true },
-    },
-  },
-});
+import { categories } from "./db/schema.ts";
+
+const allCategories = await db.select().from(categories);
 ```

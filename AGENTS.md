@@ -6,7 +6,7 @@ This document provides essential information for AI coding agents working on the
 
 This is a Bun workspace monorepo with:
 - **Client**: React 18 + TypeScript + Vite + Tailwind CSS frontend
-- **Server**: Node.js/Express + TypeScript + Prisma + SQLite backend
+- **Server**: Express.js + TypeScript + Drizzle ORM + SQLite backend
 - **Purpose**: Web scraping auction sites and AI-powered item categorization
 
 ## Build/Lint/Test Commands
@@ -40,11 +40,9 @@ cd packages/server && bun run start
 
 ### Database Commands
 ```bash
-# Generate Prisma client
-bun run prisma-generate
-
-# Run database migrations
-cd packages/server && bunx prisma migrate dev
+# Drizzle uses SQLite with libsql client
+# Database file: packages/server/db/dev.db
+# Migrations folder: packages/server/drizzle/
 ```
 
 ### Running a Single Test
@@ -73,9 +71,12 @@ No linting tools are currently configured. Consider adding:
 import express from "express";
 import type { Request, Response } from "express";
 
+// Drizzle ORM imports
+import { db } from "./db/db.ts";
+import { scrapers, auctions, auctionItem, categories, categoryProbability } from "./db/schema.ts";
+
 // Relative imports with proper paths
-import { loadConfig } from "../lib/config";
-import type { ScrapedAuction } from "../scrapers";
+import { loadConfig } from "./lib/config.ts";
 
 // React imports
 import type { ReactNode, ButtonHTMLAttributes } from "react";
@@ -115,8 +116,8 @@ export function Button({
 // Route handlers with proper typing
 export async function getAuctions(req: Request, res: Response) {
   try {
-    const auctions = await prisma.auction.findMany();
-    res.json(auctions);
+    const allAuctions = await db.select().from(auctions);
+    res.json(allAuctions);
   } catch (error) {
     console.error("Error fetching auctions:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -137,19 +138,21 @@ export async function scrapeWebsite(scraperId: string): Promise<ScrapeResult> {
 }
 ```
 
-### Database Patterns (Prisma)
+### Database Patterns (Drizzle ORM)
 ```typescript
-// Use Prisma client with proper error handling
-const scraper = await prisma.scraper.findUnique({
-  where: { id: scraperId },
+// Use Drizzle client with proper error handling
+const result = await db.select().from(scrapers).where(eq(scrapers.id, scraperId));
+
+// Insert operations
+await db.insert(scrapers).values({
+  url: "https://example.com",
+  name: "Example"
 });
 
-// Upsert operations for safe updates
-await prisma.auctionItem.upsert({
-  where: { url: item.url },
-  create: data,
-  update: data,
-});
+// Upsert operations using onConflict
+await db.insert(auctions)
+  .values(data)
+  .onConflictDoUpdate({ target: auctions.url, set: data });
 ```
 
 ### Error Handling
@@ -181,9 +184,10 @@ packages/
 │   ├── stores/        # Zustand stores
 │   └── main.tsx       # Entry point
 └── server/src/
-    ├── routes/        # API route handlers
+    ├── routes/        # API route handlers (file-based)
     ├── services/      # Business logic
     ├── scrapers/      # Web scraping implementations
+    ├── db/            # Drizzle schema and client
     ├── lib/           # Utilities and config
     └── index.ts       # Server entry point
 ```
@@ -192,11 +196,11 @@ packages/
 - **Input validation**: Sanitize user inputs and API data
 - **Environment variables**: Never commit secrets, use .env files
 - **CORS**: Configure properly for production
-- **SQL injection**: Use Prisma's parameterized queries
+- **SQL injection**: Use Drizzle's parameterized queries
 - **Rate limiting**: Consider implementing for scraping endpoints
 
 ### Performance Considerations
-- **Database queries**: Use Prisma's include/select to avoid N+1 queries
+- **Database queries**: Use Drizzle's select with proper filters to avoid N+1 queries
 - **API responses**: Paginate large datasets
 - **Image optimization**: Lazy load images, optimize formats
 - **Bundle size**: Monitor and optimize client bundle
@@ -236,7 +240,7 @@ packages/
 
 - **Build issues**: Check package.json scripts and dependencies
 - **Type errors**: Run `bun run typecheck` in server package
-- **Database issues**: Check Prisma schema and run migrations
+- **Database issues**: Check Drizzle schema and migrations
 - **Runtime errors**: Check server logs and client console
 
 ## Environment Setup
@@ -249,10 +253,9 @@ packages/
 ### Development Environment
 - Client runs on http://localhost:5173
 - Server runs on http://localhost:3000
-- Database: SQLite (packages/server/prisma/dev.db)
+- Database: SQLite (packages/server/db/dev.db)
 
 ### Configuration
-- Server config: config/config.toml
+- Server config: packages/server/config/config.toml
 - Environment variables: Override config.toml values
-- Database: Auto-generated from Prisma schema</content>
-<parameter name="filePath">AGENTS.md
+- Database: SQLite with Drizzle ORM

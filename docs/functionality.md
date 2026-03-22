@@ -23,7 +23,7 @@ The Auction Categorization application provides the following core capabilities:
 ### Scraping Features
 
 - **Automatic Discovery**: Scraper identifies auctions from the main listing pages
-- **Pagination**: Handles multiple pages of auction listings (up to 100 pages)
+- **Pagination**: Handles multiple pages of auction listings
 - **Duplicate Prevention**: Uses URL-based deduplication to avoid creating duplicate auctions
 - **Concurrent Processing**: Multiple scrapers can run concurrently (configurable)
 - **Item Extraction**: Extracts individual lots/items from each auction
@@ -52,16 +52,6 @@ Scrapers can be enabled or disabled through the API:
 
 The hardware probability feature uses AI to determine the likelihood that an auction/item contains computer hardware or server equipment.
 
-### Scoring Factors
-
-The AI considers:
-- **Servers, rack servers, blade servers**
-- **CPUs, GPUs, RAM/memory modules**
-- **Storage devices (SSDs, hard drives)**
-- **Network equipment (switches, routers)**
-- **Computer components and accessories**
-- **Workstations and enterprise hardware**
-
 ### Probability Scale
 
 | Probability | Meaning |
@@ -74,8 +64,8 @@ The AI considers:
 
 Hardware probability is calculated:
 - Automatically during scraping for each item
-- On-demand via the `/api/categorizeItem` endpoint
-- In batch via `/api/categorizeAuction` for entire auctions
+- On-demand via the `/api/categorization/item` endpoint
+- In batch via `/api/categorization/auction` for entire auctions
 
 ## Item Categorization
 
@@ -108,7 +98,7 @@ The application uses a **50% confidence threshold** for automatic category assig
 
 ### Batch Processing
 
-Items are processed in batches (5 items per batch) to:
+Items are processed in batches to:
 - Avoid overwhelming the AI API
 - Enable progress tracking
 - Allow for retry on failures
@@ -141,41 +131,52 @@ User-created categories:
 
 Categories can be assigned:
 1. **Automatically** via AI (if >= 50% confidence)
-2. **Manually** via the setItemMainCategory endpoint
+2. **Manually** via the `/api/categories/main-category` endpoint
 
 ## Filtering & Search
 
 ### Auction Filtering
 
-Available filters for `/api/getAuctions`:
+Available filters for `/api/auctions`:
 
 | Filter | Type | Description |
 |--------|------|-------------|
 | scraperId | string | Filter by scraper source |
-| minProbability | number | Minimum hardware probability (0-1) |
-| maxProbability | number | Maximum hardware probability (0-1) |
 | search | string | Search in title and description |
-| sortBy | string | Sort field (probability, date) |
+| sortBy | string | Sort field (date) |
 | sortOrder | string | Sort order (asc, desc) |
 
 ### Item Filtering
 
-Available filters for `/api/getItems`:
+Available filters for `/api/items`:
 
 | Filter | Type | Description |
 |--------|------|-------------|
-| auctionId | string | Filter by auction |
-| minProbability | number | Minimum hardware probability |
-| maxProbability | number | Maximum hardware probability |
+| auctionId | string | Filter by auction (required) |
 | search | string | Search in title and description |
-| sortBy | string | Sort field (probability, price, date) |
+| sortBy | string | Sort field (price, date) |
+| sortOrder | string | Sort order (asc, desc) |
+| page | number | Page number (default: 1) |
+| limit | number | Items per page (max: 100) |
+
+### Global Item Filtering
+
+Available filters for `/api/items/all`:
+
+| Filter | Type | Description |
+|--------|------|-------------|
+| search | string | Search in title and description |
+| categoryIds | string | Comma-separated category IDs |
+| scraperIds | string | Comma-separated scraper IDs |
+| maxPrice | string | Maximum price filter |
+| sortBy | string | Sort field (price, date) |
 | sortOrder | string | Sort order (asc, desc) |
 | page | number | Page number (default: 1) |
 | limit | number | Items per page (max: 100) |
 
 ### Category Filtering
 
-Get items by category via `/api/getItemsByCategory`:
+Get items by category via `/api/categories/items`:
 - Paginated results
 - Includes auction and scraper information
 
@@ -186,15 +187,6 @@ All API inputs are sanitized to prevent:
 - XSS attacks
 - Invalid data types
 - Malformed URLs
-
-### Sanitization Functions
-
-| Function | Purpose |
-|----------|---------|
-| sanitizeId | Validates CUID/ID format |
-| sanitizeSearchQuery | Escapes special characters |
-| sanitizeProbability | Validates 0-1 range |
-| sanitizeUrl | Validates URL format |
 
 ## Error Handling
 
@@ -211,45 +203,43 @@ All API inputs are sanitized to prevent:
 
 ### Graceful Degradation
 
-- Missing AI API key: Returns default probabilities (0.5)
+- Missing AI API key: Returns error with helpful message
 - AI API failure: Returns empty probabilities, logs error
 - Database errors: Returns 500, logs error details
 
 ## Statistics & Dashboard
 
-The dashboard provides aggregated statistics:
+The dashboard provides aggregated statistics via `/api/stats`:
 
-| Metric | Endpoint | Description |
-|--------|----------|-------------|
-| scraperCount | getStats | Total number of scrapers |
-| auctionCount | getStats | Total number of auctions |
-| itemCount | getStats | Total number of items |
-| avgProbability | getStats | Average hardware probability |
-| enabledScrapers | getStats | Number of enabled scrapers |
+| Metric | Description |
+|--------|-------------|
+| scraperCount | Total number of scrapers |
+| auctionCount | Total number of auctions |
+| itemCount | Total number of items |
+| categoryProbabilityCount | Total number of category probabilities |
+| enabledScrapers | Number of enabled scrapers |
+| avgProbability | Average probability across all items |
 
 ## Performance Considerations
 
 ### Database Indexes
 
 The schema includes indexes for common query patterns:
-- `Auction.scraperId` - Filter auctions by scraper
-- `Auction.hardwareProbability` - Filter/sort by probability
-- `AuctionItem.auctionId` - Get items for auction
-- `AuctionItem.hardwareProbability` - Filter items by probability
-- `AuctionItem.mainCategoryId` - Get items by category
-- `CategoryProbability.itemId` - Get probabilities for item
-- `CategoryProbability.categoryId` - Get all probabilities for category
+- `scraper_index` on `auctions.scraperId` - Filter auctions by scraper
+- `auction_items.auctionId` - Get items for auction
+- `auction_items.mainCategoryId` - Get items by category
+- `category_probability.itemId` - Get probabilities for item
+- `category_probability.categoryId` - Get all probabilities for category
 
 ### Pagination
 
 All list endpoints support pagination:
-- Default page size: 50 items
+- Default page size: 50 items (or 100 for `/api/items/all`)
 - Maximum page size: 100 items
 - Pagination metadata included in response
 
 ### Batch Processing
 
 AI categorization processes items in batches:
-- Batch size: 5 items
-- Delay between batches: 500ms
 - Prevents API rate limiting
+- Enables progress tracking

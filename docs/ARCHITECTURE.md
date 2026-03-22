@@ -30,18 +30,18 @@ A full-stack web application for scraping auction websites and automatically cat
 
 ## Tech Stack
 
-| Layer | Current | Future (Bun-native) |
-|-------|---------|---------------------|
-| Runtime | Bun / Node.js | Bun |
-| Backend Framework | Express.js 5.x | Elysia or Hono |
-| Database | SQLite + Prisma 6 | SQLite + Prisma (or Bun SQLite) |
-| Frontend Framework | React 18 | React |
-| Frontend Bundler | Vite 5 | Vite |
-| Styling | Tailwind CSS 3 | Tailwind CSS |
-| Routing | React Router DOM 6 | React Router DOM |
-| AI Provider | Azure OpenAI (GPT-4.1-mini) | Azure OpenAI |
-| Web Scraping | Cheerio | Cheerio |
-| Configuration | TOML | TOML |
+| Layer | Technology |
+|-------|------------|
+| Runtime | Bun / Node.js |
+| Backend Framework | Express.js 5.x |
+| Database | SQLite + Drizzle ORM + libsql client |
+| Frontend Framework | React 18 |
+| Frontend Bundler | Vite 5 |
+| Styling | Tailwind CSS 3 |
+| Routing | React Router DOM 6 |
+| AI Provider | Azure OpenAI (GPT-4.1-mini) |
+| Web Scraping | Cheerio |
+| Configuration | TOML |
 
 ## Repository Structure
 
@@ -50,13 +50,16 @@ auction-categorization/
 ├── packages/
 │   ├── client/                 # React frontend application
 │   └── server/                 # Express.js backend API
-├── prisma/
-│   ├── schema.prisma           # Database schema definition
-│   ├── migrations/             # Database migrations
-│   └── dev.db                  # SQLite database file
-├── config/
-│   ├── config.toml             # Application configuration
-│   └── config-example.toml     # Configuration template
+│       ├── src/
+│       │   ├── index.ts        # Server entry point
+│       │   ├── routes/api/     # File-based API routes
+│       │   ├── services/      # Business logic
+│       │   ├── scrapers/      # Web scraper implementations
+│       │   ├── db/            # Drizzle schema and client
+│       │   └── lib/           # Utilities
+│       ├── db/                # SQLite database file
+│       ├── drizzle/            # Database migrations
+│       └── config/             # Configuration files
 ├── docs/                       # Documentation
 ├── package.json                # Root workspace configuration
 └── bun.lock                    # Bun lockfile
@@ -64,7 +67,7 @@ auction-categorization/
 
 ## Backend Architecture
 
-### Current Structure (Express.js)
+### Current Structure (Express.js with File-Based Routing)
 
 ```
 packages/server/src/
@@ -74,13 +77,55 @@ packages/server/src/
 │                               # - Bootstraps system categories
 │                               # - Sets up API routes
 │
-├── routes/
-│   └── api.ts                  # API route handlers
-│                               # - Scraper management endpoints
-│                               # - Auction CRUD operations
-│                               # - Category management
-│                               # - AI categorization endpoints
-│                               # - Statistics endpoints
+├── routes/api/                 # File-based API routes
+│   ├── auctions/
+│   │   ├── index.ts           # GET /api/auctions
+│   │   ├── [id].ts            # GET /api/auctions/:id
+│   │   └── trigger-scrape.ts # POST /api/auctions/trigger-scrape
+│   │
+│   ├── categories/
+│   │   ├── index.ts           # GET/POST /api/categories
+│   │   ├── [id].ts            # GET/PUT/DELETE /api/categories/:id
+│   │   ├── create.ts          # POST /api/categories/create
+│   │   ├── items.ts           # GET /api/categories/items
+│   │   ├── main-category.ts   # POST /api/categories/main-category
+│   │   └── probabilities.ts   # GET /api/categories/probabilities
+│   │
+│   ├── scrapers/
+│   │   ├── index.ts           # GET /api/scrapers
+│   │   └── [id]/
+│   │       ├── enable.ts      # POST /api/scrapers/:id/enable
+│   │       ├── disable.ts     # POST /api/scrapers/:id/disable
+│   │       └── scrape.ts      # POST /api/scrapers/:id/scrape
+│   │
+│   ├── items/
+│   │   ├── index.ts           # GET /api/items
+│   │   ├── all.ts            # GET /api/items/all
+│   │   ├── filter-options.ts # GET /api/items/filter-options
+│   │   └── [id]/
+│   │       └── probabilities.ts # GET /api/items/:id/probabilities
+│   │
+│   ├── websites/
+│   │   ├── index.ts           # GET/POST /api/websites
+│   │   ├── [id].ts           # GET/DELETE /api/websites/:id
+│   │   └── [id]/scrape.ts    # POST /api/websites/:id/scrape
+│   │
+│   ├── categorization/
+│   │   ├── item.ts           # POST /api/categorization/item
+│   │   ├── items.ts          # POST /api/categorization/items
+│   │   ├── auction.ts       # POST /api/categorization/auction
+│   │   └── [id].ts           # GET /api/categorization/:id
+│   │
+│   ├── database/
+│   │   ├── seed.ts           # POST /api/database/seed
+│   │   └── wipe.ts           # POST /api/database/wipe
+│   │
+│   ├── health/
+│   │   ├── index.ts          # GET /api/health
+│   │   └── [id].ts           # GET /api/health/:id
+│   │
+│   └── stats/
+│       └── index.ts          # GET /api/stats
 │
 ├── services/
 │   ├── aiCategorization.ts     # AI categorization logic
@@ -108,87 +153,21 @@ packages/server/src/
 │                               # - Lot/item extraction
 │                               # - Price and bid count parsing
 │
+├── db/
+│   ├── schema.ts              # Drizzle ORM schema definitions
+│   │                           # - scrapers, auctions, auctionItem
+│   │                           # - categories, categoryProbability
+│   │
+│   ├── db.ts                  # Database client (libsql)
+│   │                           # - Database connection management
+│   │                           # - System category initialization
+│   │
+│   └── columns.helpers.ts     # Shared column definitions
+│
 └── lib/
-    ├── config.ts               # TOML configuration loader
-    │                           # - Loads config.toml
-    │                           # - Supports environment variable overrides
-    │
-    ├── db.ts                   # Prisma client singleton
-    │                           # - Database connection management
-    │                           # - System category initialization
-    │
-    └── sanitization.ts         # Input sanitization utilities
-                                # - ID validation (CUID format)
-                                # - URL validation
-                                # - Search query sanitization
-                                # - Probability range validation
-```
-
-### Recommended Future Structure (Bun-native)
-
-For improved performance and developer experience, consider migrating to a Bun-first framework like **Elysia** or **Hono**.
-
-**Benefits of Bun-native stack:**
-- Native Bun performance optimizations
-- Built-in TypeScript support with end-to-end type safety
-- OpenAPI/Swagger generation out of the box
-- Lighter footprint and faster cold starts
-- Plugin ecosystem for common functionality
-
-**Elysia** is recommended for Bun-optimized projects with excellent TypeScript inference. **Hono** is recommended if multi-runtime support (Node.js, Deno, Cloudflare Workers) is needed.
-
-```
-packages/server/src/
-├── index.ts                    # Elysia/Hono server entry
-│
-├── app/
-│   ├── routes/                 # Route modules (feature-based)
-│   │   ├── auctions.ts         # Auction endpoints
-│   │   ├── categories.ts       # Category endpoints
-│   │   ├── scrapers.ts         # Scraper endpoints
-│   │   └── ai.ts               # AI categorization endpoints
-│   │
-│   ├── middleware/             # Custom middleware
-│   │   ├── auth.ts             # Authentication (if needed)
-│   │   └── validation.ts       # Request validation
-│   │
-│   └── plugins/                # Elysia plugins or Hono middleware
-│
-├── domain/
-│   ├── entities/               # Domain models/types
-│   │   ├── auction.ts
-│   │   ├── category.ts
-│   │   └── scraper.ts
-│   │
-│   ├── repositories/           # Data access interfaces
-│   │   ├── auction.repository.ts
-│   │   ├── category.repository.ts
-│   │   └── scraper.repository.ts
-│   │
-│   └── services/               # Business logic
-│       ├── categorization.service.ts
-│       ├── probability.service.ts
-│       └── scraping.service.ts
-│
-├── infrastructure/
-│   ├── database/               # Database client and migrations
-│   │   └── prisma.ts
-│   │
-│   ├── ai/                     # AI provider integrations
-│   │   └── openai.ts
-│   │
-│   ├── scrapers/               # Web scraper implementations
-│   │   ├── scraper.interface.ts
-│   │   ├── bopa.scraper.ts
-│   │   └── generic.scraper.ts
-│   │
-│   └── config/                 # Configuration management
-│       └── config.ts
-│
-└── shared/
-    ├── types/                  # Shared TypeScript types
-    ├── utils/                  # Utility functions
-    └── errors/                 # Custom error classes
+    └── config.ts               # TOML configuration loader
+                                # - Loads config.toml
+                                # - Supports environment variable overrides
 ```
 
 ## Frontend Architecture
@@ -198,90 +177,49 @@ The frontend follows a **feature-based architecture** for scalability and mainta
 ### Project Structure
 
 ```
-src/
+packages/client/src/
 ├── app/                        # Application layer
-│   ├── routes/                 # Application routes / pages
-│   ├── app.tsx                 # Main application component
-│   ├── provider.tsx            # Application provider (wraps app with global providers)
-│   └── router.tsx              # Application router configuration
-│
-├── assets/                     # Static files (images, fonts, etc.)
+│   ├── app.tsx                 # Main application component with routing
+│   ├── main.tsx                # React entry point
+│   └── app.css                 # Global styles
 │
 ├── components/                 # Shared components used across the entire application
+│   ├── Layout.tsx             # Main layout with navigation bar
+│   ├── PageHeader.tsx         # Reusable page title header with optional actions
+│   ├── Card.tsx               # Composable card system (Card, CardHeader, CardContent, CardFooter)
+│   ├── Modal.tsx               # Overlay modal dialog for forms
+│   ├── Button.tsx              # Primary button with variants (primary, secondary, danger, ghost)
+│   ├── Badge.tsx               # Badge with color variants (default, success, warning, error, info)
+│   ├── LoadingSpinner.tsx      # Animated loading indicator
+│   ├── AlertMessage.tsx        # Alert notifications for success, error, info
+│   ├── ItemCard.tsx            # Complex auction item card with category visualization
+│   ├── StatCard.tsx            # Statistics display card
+│   ├── EmptyState.tsx          # Empty state template
+│   ├── FormInput.tsx           # Form field components (TextInput, TextArea, SelectInput)
+│   ├── Pagination.tsx          # Pagination controls
+│   ├── BulkActionToolbar.tsx   # Bulk action toolbar for item selection
+│   ├── ItemSelectionCheckbox.tsx # Checkbox for item selection
+│   └── MultiSelectDropdown.tsx # Multi-select dropdown component
 │
-├── config/                     # Global configurations, exported env variables
+├── pages/                      # Page components
+│   ├── HomePage.tsx            # Dashboard/home page
+│   ├── AuctionsPage.tsx       # Auction listing page
+│   ├── AuctionDetailPage.tsx   # Auction detail with items
+│   ├── AllItemsPage.tsx        # All items listing page
+│   ├── CategoriesPage.tsx      # Category management page
+│   ├── CategoryDetailPage.tsx  # Category detail with items
+│   ├── ScrapingPage.tsx        # Scraper management page
+│   └── DatabasePage.tsx        # Database management page
 │
-├── features/                   # Feature-based modules
-│   ├── auctions/               # Auction browsing and details
-│   ├── categories/             # Category management
-│   └── scraping/               # Scraper management
+├── stores/                     # Zustand state stores
+│   └── itemSelectionStore.ts   # Item selection state for bulk actions
 │
-├── hooks/                      # Shared hooks used across the entire application
-│
-├── lib/                        # Reusable libraries preconfigured for the application
-│
-├── stores/                     # Global state stores
-│
-├── testing/                    # Test utilities and mocks
-│
-├── types/                      # Shared types used across the application
-│
-└── utils/                      # Shared utility functions
+└── vite-env.d.ts              # Vite type declarations
 ```
-
-### Feature Module Structure
-
-Each feature folder contains code specific to that feature, keeping things neatly separated:
-
-```
-src/features/awesome-feature/
-├── api/                        # Exported API request declarations and api hooks
-│
-├── assets/                     # Static files for a specific feature
-│
-├── components/                 # Components scoped to a specific feature
-│
-├── hooks/                      # Hooks scoped to a specific feature
-│
-├── stores/                     # State stores for a specific feature
-│
-├── types/                      # TypeScript types used within the feature
-│
-└── utils/                      # Utility functions for a specific feature
-```
-
-### Architecture Guidelines
-
-1. **Only include necessary folders** - Not every feature needs all folders. Include only what's required for that specific feature.
-
-2. **Import files directly** - Avoid barrel files (index.ts re-exports) as they can cause issues with Vite tree shaking and lead to performance issues.
-
-3. **Don't import across features** - Features should be independent. Instead, compose different features at the application level. This keeps the codebase less convoluted.
-
-4. **Shared API calls** - In some cases it might be more practical to keep all API calls outside of the features folders in a dedicated `api` folder if you have a lot of shared API calls between features.
-
-### Current Components
-
-The application includes these shared UI components:
-
-| Component | Purpose |
-|-----------|---------|
-| `Layout` | Main layout with navigation bar |
-| `PageHeader` | Reusable page title header with optional actions |
-| `Card` | Composable card system (Card, CardHeader, CardContent, CardFooter) |
-| `Modal` | Overlay modal dialog for forms |
-| `Button` | Primary button with variants (primary, secondary, danger, ghost) |
-| `Badge` | Badge with color variants (default, success, warning, error, info) |
-| `LoadingSpinner` | Animated loading indicator |
-| `AlertMessage` | Alert notifications for success, error, info |
-| `ItemCard` | Complex auction item card with category visualization |
-| `StatCard` | Statistics display card |
-| `EmptyState` | Empty state template |
-| `FormInput` | Form field components (TextInput, TextArea, SelectInput) |
 
 ## Database Schema
 
-The application uses SQLite with Prisma ORM. See [domain-model.md](./domain-model.md) for detailed field documentation.
+The application uses SQLite with Drizzle ORM. See [domain-model.md](./domain-model.md) for detailed field documentation.
 
 ### Entity Relationships
 
@@ -302,7 +240,7 @@ The application uses SQLite with Prisma ORM. See [domain-model.md](./domain-mode
 | Model | Description |
 |-------|-------------|
 | **Scraper** | Website source configuration (url, name, enabled status) |
-| **Auction** | Auction listing (title, dates, hardware probability) |
+| **Auction** | Auction listing (title, dates, items count) |
 | **AuctionItem** | Individual lot/item (title, price, bid count, main category) |
 | **Category** | User-defined categories (name, description, isSystem flag) |
 | **CategoryProbability** | AI-calculated probability per category per item |
@@ -319,11 +257,15 @@ The backend provides a REST API organized into these categories:
 
 | Category | Endpoints | Description |
 |----------|-----------|-------------|
-| **Scrapers** | `getScrapers`, `enableScraper`, `disableScraper`, `scrapeScraper`, `triggerScrape` | Manage scraper configurations and trigger scraping |
-| **Auctions** | `getAuctions`, `index`, `getItems` | Browse and filter auctions and items |
-| **Categories** | `getCategories`, `getCategory`, `createCategory`, `updateCategory`, `deleteCategory`, `getItemsByCategory` | CRUD operations for categories |
-| **AI Categorization** | `categorizeItem`, `categorizeItems`, `categorizeAuction`, `getItemCategorization` | AI-powered item categorization |
-| **Statistics** | `getStats` | Dashboard statistics |
+| **Auctions** | `GET /api/auctions`, `GET /api/auctions/:id`, `POST /api/auctions/trigger-scrape` | Browse and trigger scraping |
+| **Categories** | `GET/POST /api/categories`, `GET/PUT/DELETE /api/categories/:id` | CRUD operations for categories |
+| **Scrapers** | `GET /api/scrapers`, `POST /api/scrapers/:id/enable|disable|scrape` | Manage scraper configurations |
+| **Items** | `GET /api/items`, `GET /api/items/all`, `GET /api/items/:id/probabilities` | Browse and filter items |
+| **AI Categorization** | `POST /api/categorization/item|items|auction`, `GET /api/categorization/:id` | AI-powered item categorization |
+| **Statistics** | `GET /api/stats` | Dashboard statistics |
+| **Database** | `POST /api/database/seed|wipe` | Database management |
+| **Health** | `GET /api/health`, `GET /api/health/:id` | Health check endpoints |
+| **Websites** | `GET/POST /api/websites`, `GET/DELETE /api/websites/:id` | Website management |
 
 See [endpoints.md](./endpoints.md) for full API documentation.
 
@@ -399,17 +341,11 @@ timeout_seconds = 30                          # Request timeout
 max_concurrent = 5                            # Parallel request limit
 
 [database]
-path = "./prisma/dev.db"                      # SQLite database path
+path = "./db/dev.db"                           # SQLite database path
 
 [server]
 port = 3000                                   # Server port
 host = "localhost"                            # Server host
-
-[[scrapers]]                                  # Pre-configured scrapers
-name = "BOPA Veilingen"
-url = "https://www.bopa.be"
-image_url = "https://www.bopa.be/favicon.ico"
-enabled = true
 ```
 
 ### Environment Variables
@@ -443,10 +379,6 @@ cd auction-categorization
 # Install dependencies
 bun install
 
-# Set up database
-bun run prisma-generate
-cd packages/server && bunx prisma migrate dev
-
 # Start development servers
 bun run dev
 ```
@@ -465,7 +397,6 @@ bun run dev
 bun run dev           # Start both client and server
 bun run dev:client    # Start frontend only
 bun run dev:server    # Start backend only
-bun run prisma-generate  # Generate Prisma client
 ```
 
 ## Additional Documentation

@@ -22,7 +22,7 @@ All responses return JSON data. Error responses include an `error` field:
 
 ### Get Dashboard Statistics
 
-**Endpoint:** `GET /api/getStats`
+**Endpoint:** `GET /api/stats`
 
 **Description:** Returns aggregated statistics for the dashboard.
 
@@ -32,8 +32,9 @@ All responses return JSON data. Error responses include an `error` field:
   "scraperCount": 5,
   "auctionCount": 150,
   "itemCount": 1200,
-  "avgProbability": 0.65,
-  "enabledScrapers": 3
+  "categoryProbabilityCount": 5000,
+  "enabledScrapers": 3,
+  "avgProbability": 0.65
 }
 ```
 
@@ -49,106 +50,30 @@ All responses return JSON data. Error responses include an `error` field:
 
 ### Get All Scrapers
 
-**Endpoint:** `GET /api/getScrapers`
+**Endpoint:** `GET /api/scrapers`
 
-**Description:** Returns all scrapers with auction counts.
+**Description:** Returns all scrapers.
 
 **Response:**
 ```json
 [
   {
-    "id": "clx123abc",
+    "id": 1,
     "url": "https://www.bopa.be",
     "name": "BOPA Veilingen",
-    "imageUrl": "https://www.bopa.be/favicon.ico",
-    "enabled": true,
-    "auctions": []
+    "image_url": "https://www.bopa.be/favicon.ico",
+    "enabled": true
   }
 ]
 ```
-
-**Status Codes:**
-| Code | Description |
-|------|-------------|
-| 200 | Success |
-| 500 | Server error |
-
----
-
-### Trigger Single Scraper
-
-**Endpoint:** `POST /api/scrapeScraper`
-
-**Description:** Triggers scraping for a specific scraper.
-
-**Request Body:**
-```json
-{
-  "scraperId": "clx123abc"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "auctionsFound": 10,
-  "newAuctions": 5
-}
-```
-
-**Status Codes:**
-| Code | Description |
-|------|-------------|
-| 200 | Success |
-| 400 | Invalid scraper ID, scraper disabled, or no scraper available |
-| 404 | Scraper not found |
-| 500 | Server error |
-
----
-
-### Trigger All Scrapers
-
-**Endpoint:** `POST /api/triggerScrape`
-
-**Description:** Triggers scraping for all enabled scrapers concurrently.
-
-**Request Body:** Empty
-
-**Response:**
-```json
-{
-  "results": [
-    {
-      "scraperId": "clx123abc",
-      "success": true,
-      "auctionsFound": 10,
-      "newAuctions": 5
-    }
-  ]
-}
-```
-
-**Status Codes:**
-| Code | Description |
-|------|-------------|
-| 200 | Success |
-| 500 | Server error |
 
 ---
 
 ### Enable Scraper
 
-**Endpoint:** `POST /api/enableScraper`
+**Endpoint:** `POST /api/scrapers/:id/enable`
 
 **Description:** Enables a disabled scraper.
-
-**Request Body:**
-```json
-{
-  "scraperId": "clx123abc"
-}
-```
 
 **Response:**
 ```json
@@ -168,16 +93,9 @@ All responses return JSON data. Error responses include an `error` field:
 
 ### Disable Scraper
 
-**Endpoint:** `POST /api/disableScraper`
+**Endpoint:** `POST /api/scrapers/:id/disable`
 
 **Description:** Disables an enabled scraper.
-
-**Request Body:**
-```json
-{
-  "scraperId": "clx123abc"
-}
-```
 
 **Response:**
 ```json
@@ -195,30 +113,19 @@ All responses return JSON data. Error responses include an `error` field:
 
 ---
 
-### Add Website
+### Scrape Specific Scraper
 
-**Endpoint:** `POST /api/addWebsite`
+**Endpoint:** `POST /api/scrapers/:id/scrape`
 
-**Description:** Adds a new scraper dynamically.
-
-**Request Body:**
-```json
-{
-  "url": "https://example-auction.com"
-}
-```
+**Description:** Triggers scraping for a specific scraper.
 
 **Response:**
 ```json
 {
   "success": true,
-  "scraper": {
-    "id": "clx456def",
-    "url": "https://example-auction.com",
-    "name": "Example Auctions",
-    "imageUrl": "https://example-auction.com/favicon.ico",
-    "enabled": true
-  }
+  "scraperId": "1",
+  "auctionsFound": 10,
+  "newAuctions": 5
 }
 ```
 
@@ -226,60 +133,8 @@ All responses return JSON data. Error responses include an `error` field:
 | Code | Description |
 |------|-------------|
 | 200 | Success |
-| 400 | Invalid URL or website already exists |
-| 500 | Server error |
-
----
-
-### Delete Website
-
-**Endpoint:** `POST /api/deleteWebsite`
-
-**Description:** Deletes a scraper and all its auctions/items.
-
-**Request Body:**
-```json
-{
-  "id": "clx123abc"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true
-}
-```
-
-**Status Codes:**
-| Code | Description |
-|------|-------------|
-| 200 | Success |
-| 400 | Invalid ID |
-| 404 | Website not found |
-| 500 | Server error |
-
----
-
-### Test BOPA Scraping
-
-**Endpoint:** `GET /api/scrapeBopa`
-
-**Description:** Direct test endpoint for BOPA scraping (bypasses database).
-
-**Response:**
-```json
-{
-  "auctions": [...],
-  "lastUpdated": "2026-01-12T10:30:00.000Z",
-  "source": "https://www.bopa.be"
-}
-```
-
-**Status Codes:**
-| Code | Description |
-|------|-------------|
-| 200 | Success |
+| 400 | Invalid scraper ID or scraper disabled |
+| 404 | Scraper not found |
 | 500 | Server error |
 
 ---
@@ -288,7 +143,7 @@ All responses return JSON data. Error responses include an `error` field:
 
 ### Get All Auctions
 
-**Endpoint:** `GET /api/getAuctions`
+**Endpoint:** `GET /api/auctions`
 
 **Description:** Returns all auctions with optional filtering.
 
@@ -296,70 +151,57 @@ All responses return JSON data. Error responses include an `error` field:
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | scraperId | string | Filter by scraper (use "all" for all scrapers) |
-| minProbability | string | Minimum hardware probability (0-1) |
-| maxProbability | string | Maximum hardware probability (0-1) |
 | search | string | Search term for title/description |
-| sortBy | string | Sort field: "probability" or "date" |
-| sortOrder | string | Sort order: "asc" or "desc" |
+| sortBy | string | Sort field: "date" (default) |
+| sortOrder | string | Sort order: "asc" or "desc" (default) |
 
 **Response:**
 ```json
 [
   {
-    "id": "clx789ghi",
+    "id": 1,
     "url": "https://www.bopa.be/auction/123",
     "title": "Server Equipment Auction",
     "description": "Various server equipment",
     "startDate": "2026-01-10T00:00:00.000Z",
     "endDate": "2026-01-20T00:00:00.000Z",
-    "hardwareProbability": 0.85,
-    "itemsCount": 25,
-    "scraperId": "clx123abc",
-    "scraper": {...},
-    "items": [...],
+    "itemsCount": "25",
+    "scraperId": 1,
     "createdAt": "2026-01-12T00:00:00.000Z",
     "updatedAt": "2026-01-12T00:00:00.000Z"
   }
 ]
 ```
 
-**Status Codes:**
-| Code | Description |
-|------|-------------|
-| 200 | Success |
-| 500 | Server error |
-
 ---
 
 ### Get Auction Details
 
-**Endpoint:** `GET /api/index`
+**Endpoint:** `GET /api/auctions/:id`
 
 **Description:** Returns a single auction with all its items.
-
-**Query Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| id | string | Auction ID |
 
 **Response:**
 ```json
 {
-  "id": "clx789ghi",
+  "id": 1,
   "url": "https://www.bopa.be/auction/123",
   "title": "Server Equipment Auction",
   "description": "Various server equipment",
   "startDate": "2026-01-10T00:00:00.000Z",
   "endDate": "2026-01-20T00:00:00.000Z",
-  "hardwareProbability": 0.85,
-  "itemsCount": 25,
-  "scraperId": "clx123abc",
-  "scraper": {...},
+  "itemsCount": "25",
+  "scraperId": 1,
+  "scraper": {
+    "id": 1,
+    "name": "BOPA Veilingen",
+    "url": "https://www.bopa.be"
+  },
   "items": [
     {
-      "id": "item123",
+      "id": 1,
       "title": "Dell PowerEdge R740",
-      "mainCategory": {...},
+      "mainCategory": {"id": 1, "name": "Servers"},
       "categoryProbabilities": [...]
     }
   ],
@@ -378,11 +220,33 @@ All responses return JSON data. Error responses include an `error` field:
 
 ---
 
-## Auction Items
+### Trigger All Scraping
 
-### Get Items
+**Endpoint:** `POST /api/auctions/trigger-scrape`
 
-**Endpoint:** `GET /api/getItems`
+**Description:** Triggers scraping for all enabled websites.
+
+**Response:**
+```json
+{
+  "results": [
+    {
+      "scraperId": "1",
+      "success": true,
+      "auctionsFound": 10,
+      "newAuctions": 5
+    }
+  ]
+}
+```
+
+---
+
+## Items
+
+### Get Items (by Auction)
+
+**Endpoint:** `GET /api/items`
 
 **Description:** Returns paginated items for an auction with filtering.
 
@@ -390,10 +254,8 @@ All responses return JSON data. Error responses include an `error` field:
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | auctionId | string | Auction ID (required) |
-| minProbability | string | Minimum hardware probability (0-1) |
-| maxProbability | string | Maximum hardware probability (0-1) |
 | search | string | Search term for title/description |
-| sortBy | string | Sort field: "probability", "price", or "date" |
+| sortBy | string | Sort field: "price" or "date" |
 | sortOrder | string | Sort order: "asc" or "desc" |
 | page | string | Page number (default: 1) |
 | limit | string | Items per page (max: 100, default: 50) |
@@ -403,16 +265,15 @@ All responses return JSON data. Error responses include an `error` field:
 {
   "items": [
     {
-      "id": "item123",
+      "id": 1,
       "url": "https://www.bopa.be/item/456",
       "title": "Dell PowerEdge R740 Server",
       "description": "2U rack server with dual Xeon",
       "imageUrl": "https://example.com/image.jpg",
       "currentPrice": 1500.00,
       "bidCount": 12,
-      "hardwareProbability": 0.92,
-      "mainCategoryId": "cat789",
-      "auctionId": "clx789ghi",
+      "mainCategoryId": 1,
+      "auctionId": 1,
       "createdAt": "2026-01-12T00:00:00.000Z",
       "updatedAt": "2026-01-12T00:00:00.000Z"
     }
@@ -430,8 +291,102 @@ All responses return JSON data. Error responses include an `error` field:
 | Code | Description |
 |------|-------------|
 | 200 | Success |
-| 400 | Invalid auction ID |
+| 400 | Auction ID required or invalid |
 | 500 | Server error |
+
+---
+
+### Get All Items (Global)
+
+**Endpoint:** `GET /api/items/all`
+
+**Description:** Returns paginated items across all auctions with filtering.
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| search | string | Search term for title/description |
+| categoryIds | string | Comma-separated category IDs |
+| scraperIds | string | Comma-separated scraper IDs |
+| maxPrice | string | Maximum price filter |
+| sortBy | string | Sort field: "price" or "date" |
+| sortOrder | string | Sort order: "asc" or "desc" |
+| page | string | Page number (default: 1) |
+| limit | string | Items per page (max: 100, default: 100) |
+
+**Response:**
+```json
+{
+  "items": [
+    {
+      "id": 1,
+      "title": "Dell PowerEdge R740 Server",
+      "mainCategory": {"id": 1, "name": "Servers"},
+      "auction": {
+        "id": 1,
+        "title": "Server Equipment Auction",
+        "scraper": {"id": 1, "name": "BOPA"}
+      },
+      "categoryProbabilities": [...]
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 100,
+    "total": 500,
+    "totalPages": 5
+  }
+}
+```
+
+---
+
+### Get Filter Options
+
+**Endpoint:** `GET /api/items/filter-options`
+
+**Description:** Returns available filter options for items.
+
+**Response:**
+```json
+{
+  "categories": [
+    {"id": 1, "name": "Servers", "itemCount": 45}
+  ],
+  "scrapers": [
+    {"id": 1, "name": "BOPA Veilingen", "imageUrl": "..."}
+  ]
+}
+```
+
+---
+
+### Get Item Probabilities
+
+**Endpoint:** `GET /api/items/:id/probabilities`
+
+**Description:** Returns an item with its category probabilities.
+
+**Response:**
+```json
+{
+  "id": 1,
+  "title": "Dell PowerEdge R740 Server",
+  "mainCategory": {"id": 1, "name": "Servers"},
+  "categoryProbabilities": [
+    {
+      "id": 1,
+      "probability": 0.85,
+      "category": {"id": 1, "name": "Servers"}
+    }
+  ],
+  "auction": {
+    "id": 1,
+    "title": "Server Equipment Auction",
+    "scraper": {"id": 1, "name": "BOPA"}
+  }
+}
+```
 
 ---
 
@@ -439,7 +394,7 @@ All responses return JSON data. Error responses include an `error` field:
 
 ### Get All Categories
 
-**Endpoint:** `GET /api/getCategories`
+**Endpoint:** `GET /api/categories`
 
 **Description:** Returns all categories with item counts.
 
@@ -447,48 +402,33 @@ All responses return JSON data. Error responses include an `error` field:
 ```json
 [
   {
-    "id": "cat789",
+    "id": 1,
     "name": "Servers",
     "description": "Rack servers, blade servers, tower servers",
     "isSystem": false,
-    "_count": {
-      "items": 45
-    },
+    "itemCount": 45,
     "createdAt": "2026-01-10T00:00:00.000Z",
     "updatedAt": "2026-01-10T00:00:00.000Z"
   }
 ]
 ```
 
-**Status Codes:**
-| Code | Description |
-|------|-------------|
-| 200 | Success |
-| 500 | Server error |
-
 ---
 
 ### Get Category
 
-**Endpoint:** `GET /api/getCategory`
+**Endpoint:** `GET /api/categories/:id`
 
 **Description:** Returns a single category.
-
-**Query Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| id | string | Category ID |
 
 **Response:**
 ```json
 {
-  "id": "cat789",
+  "id": 1,
   "name": "Servers",
   "description": "Rack servers, blade servers, tower servers",
   "isSystem": false,
-  "_count": {
-    "items": 45
-  },
+  "itemCount": 45,
   "createdAt": "2026-01-10T00:00:00.000Z",
   "updatedAt": "2026-01-10T00:00:00.000Z"
 }
@@ -506,7 +446,7 @@ All responses return JSON data. Error responses include an `error` field:
 
 ### Create Category
 
-**Endpoint:** `POST /api/createCategory`
+**Endpoint:** `POST /api/categories`
 
 **Description:** Creates a new category.
 
@@ -523,7 +463,7 @@ All responses return JSON data. Error responses include an `error` field:
 {
   "success": true,
   "category": {
-    "id": "cat456",
+    "id": 2,
     "name": "Storage",
     "description": "Storage devices, NAS, SAN equipment",
     "isSystem": false,
@@ -544,14 +484,13 @@ All responses return JSON data. Error responses include an `error` field:
 
 ### Update Category
 
-**Endpoint:** `POST /api/updateCategory`
+**Endpoint:** `PUT /api/categories/:id`
 
 **Description:** Updates a category.
 
 **Request Body:**
 ```json
 {
-  "id": "cat456",
   "name": "Storage Devices",
   "description": "Updated description"
 }
@@ -562,7 +501,7 @@ All responses return JSON data. Error responses include an `error` field:
 {
   "success": true,
   "category": {
-    "id": "cat456",
+    "id": 2,
     "name": "Storage Devices",
     "description": "Updated description",
     "isSystem": false,
@@ -584,16 +523,9 @@ All responses return JSON data. Error responses include an `error` field:
 
 ### Delete Category
 
-**Endpoint:** `POST /api/deleteCategory`
+**Endpoint:** `DELETE /api/categories/:id`
 
 **Description:** Deletes a category.
-
-**Request Body:**
-```json
-{
-  "id": "cat456"
-}
-```
 
 **Response:**
 ```json
@@ -615,14 +547,14 @@ All responses return JSON data. Error responses include an `error` field:
 
 ### Get Items by Category
 
-**Endpoint:** `GET /api/getItemsByCategory`
+**Endpoint:** `GET /api/categories/items`
 
 **Description:** Returns items assigned to a specific category.
 
 **Query Parameters:**
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| categoryId | string | Category ID |
+| categoryId | string | Category ID (required) |
 | page | string | Page number (default: 1) |
 | limit | string | Items per page (max: 100, default: 50) |
 
@@ -630,17 +562,17 @@ All responses return JSON data. Error responses include an `error` field:
 ```json
 {
   "category": {
-    "id": "cat789",
+    "id": 1,
     "name": "Servers"
   },
   "items": [
     {
-      "id": "item123",
+      "id": 1,
       "title": "Dell PowerEdge R740",
-      ...
       "auction": {
-        "id": "clx789ghi",
-        "scraper": {...}
+        "id": 1,
+        "title": "Server Auction",
+        "scraper": {"id": 1, "name": "BOPA"}
       }
     }
   ],
@@ -653,13 +585,71 @@ All responses return JSON data. Error responses include an `error` field:
 }
 ```
 
-**Status Codes:**
-| Code | Description |
-|------|-------------|
-| 200 | Success |
-| 400 | Invalid category ID |
-| 404 | Category not found |
-| 500 | Server error |
+---
+
+### Save Item Probabilities
+
+**Endpoint:** `POST /api/categories/probabilities`
+
+**Description:** Saves AI-calculated probabilities for an item.
+
+**Request Body:**
+```json
+{
+  "itemId": "1",
+  "probabilities": [
+    { "categoryId": "1", "probability": 0.85 },
+    { "categoryId": "2", "probability": 0.12 }
+  ]
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "item": {
+    "id": 1,
+    "mainCategoryId": 1,
+    "categoryProbabilities": [...]
+  }
+}
+```
+
+---
+
+### Set Item Main Category
+
+**Endpoint:** `PUT /api/categories/main-category`
+
+**Description:** Manually assigns a category to an item.
+
+**Request Body:**
+```json
+{
+  "itemId": "1",
+  "categoryId": "1"
+}
+```
+
+To remove the category assignment:
+```json
+{
+  "itemId": "1",
+  "categoryId": null
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "item": {
+    "id": 1,
+    "mainCategoryId": 1
+  }
+}
+```
 
 ---
 
@@ -667,30 +657,24 @@ All responses return JSON data. Error responses include an `error` field:
 
 ### Categorize Single Item
 
-**Endpoint:** `POST /api/categorizeItem`
+**Endpoint:** `POST /api/categorization/item`
 
-**Description:** Uses AI to categorize a single item.
+**Description:** Uses AI to categorize a single item (returns probabilities without saving).
 
 **Request Body:**
 ```json
 {
-  "itemId": "item123"
+  "itemId": "1"
 }
 ```
 
 **Response:**
 ```json
 {
-  "itemId": "item123",
+  "itemId": "1",
   "probabilities": [
-    {
-      "categoryId": "cat789",
-      "probability": 0.85
-    },
-    {
-      "categoryId": "cat456",
-      "probability": 0.12
-    }
+    { "categoryId": "1", "probability": 0.85 },
+    { "categoryId": "2", "probability": 0.12 }
   ]
 }
 ```
@@ -699,62 +683,22 @@ All responses return JSON data. Error responses include an `error` field:
 | Code | Description |
 |------|-------------|
 | 200 | Success |
-| 400 | Invalid item ID |
+| 400 | Invalid item ID or no categories defined |
 | 404 | Item not found |
-| 400 | No categories defined |
 | 500 | Server error |
 
 ---
 
 ### Categorize Multiple Items
 
-**Endpoint:** `POST /api/categorizeItems`
+**Endpoint:** `POST /api/categorization/items`
 
 **Description:** Uses AI to categorize multiple items.
 
 **Request Body:**
 ```json
 {
-  "itemIds": ["item123", "item456", "item789"]
-}
-```
-
-**Response:**
-```json
-{
-  "results": [
-    {
-      "itemId": "item123",
-      "probabilities": [...]
-    },
-    {
-      "itemId": "item456",
-      "probabilities": [...]
-    }
-  ]
-}
-```
-
-**Status Codes:**
-| Code | Description |
-|------|-------------|
-| 200 | Success |
-| 400 | Invalid item IDs array, empty array, or no items found |
-| 400 | No categories defined |
-| 500 | Server error |
-
----
-
-### Categorize Entire Auction
-
-**Endpoint:** `POST /api/categorizeAuction`
-
-**Description:** Uses AI to categorize all items in an auction and saves results.
-
-**Request Body:**
-```json
-{
-  "auctionId": "clx789ghi",
+  "itemIds": ["1", "2", "3"],
   "saveResults": true
 }
 ```
@@ -762,11 +706,10 @@ All responses return JSON data. Error responses include an `error` field:
 **Response:**
 ```json
 {
-  "auctionId": "clx789ghi",
-  "itemCount": 25,
+  "itemCount": 3,
   "results": [
     {
-      "itemId": "item123",
+      "itemId": "1",
       "probabilities": [...]
     }
   ],
@@ -778,133 +721,126 @@ All responses return JSON data. Error responses include an `error` field:
 | Code | Description |
 |------|-------------|
 | 200 | Success |
-| 400 | Invalid auction ID or no items in auction |
+| 400 | Invalid item IDs, empty array, or no categories defined |
+| 404 | No items found |
+| 500 | Server error |
+
+---
+
+### Categorize Entire Auction
+
+**Endpoint:** `POST /api/categorization/auction`
+
+**Description:** Uses AI to categorize all items in an auction.
+
+**Request Body:**
+```json
+{
+  "auctionId": "1",
+  "saveResults": true
+}
+```
+
+**Response:**
+```json
+{
+  "auctionId": 1,
+  "itemCount": 25,
+  "results": [
+    {
+      "itemId": "1",
+      "probabilities": [...]
+    }
+  ],
+  "saved": true
+}
+```
+
+**Status Codes:**
+| Code | Description |
+|------|-------------|
+| 200 | Success |
+| 400 | Invalid auction ID, no items, or no categories defined |
 | 404 | Auction not found |
-| 400 | No categories defined |
-| 500 | Server error |
-
-**Notes:**
-- If `saveResults` is true, probabilities are stored and main categories are set
-- Only categories with >= 50% probability are auto-assigned
-
----
-
-### Save Item Category Probabilities
-
-**Endpoint:** `POST /api/saveItemCategoryProbabilities`
-
-**Description:** Saves AI-calculated probabilities for an item.
-
-**Request Body:**
-```json
-{
-  "itemId": "item123",
-  "probabilities": [
-    { "categoryId": "cat789", "probability": 0.85 },
-    { "categoryId": "cat456", "probability": 0.12 }
-  ]
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "item": {
-    "id": "item123",
-    "mainCategoryId": "cat789",
-    "categoryProbabilities": [...]
-  }
-}
-```
-
-**Status Codes:**
-| Code | Description |
-|------|-------------|
-| 200 | Success |
-| 400 | Invalid item ID, invalid probabilities array, or item not found |
-| 500 | Server error |
-
-**Notes:**
-- Sets main category to highest probability if >= 50%
-
----
-
-### Set Item Main Category
-
-**Endpoint:** `POST /api/setItemMainCategory`
-
-**Description:** Manually assigns a category to an item.
-
-**Request Body:**
-```json
-{
-  "itemId": "item123",
-  "categoryId": "cat789"
-}
-```
-
-To remove the category assignment:
-```json
-{
-  "itemId": "item123",
-  "categoryId": null
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "item": {
-    "id": "item123",
-    "mainCategoryId": "cat789"
-  }
-}
-```
-
-**Status Codes:**
-| Code | Description |
-|------|-------------|
-| 200 | Success |
-| 400 | Invalid item ID or category ID |
-| 404 | Category not found (if categoryId provided) |
 | 500 | Server error |
 
 ---
 
-### Get Item with Probabilities
+### Get Item Categorization
 
-**Endpoint:** `GET /api/getItemCategoryProbabilities`
+**Endpoint:** `GET /api/categorization/:id`
 
-**Description:** Returns an item with its category probabilities.
-
-**Query Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| itemId | string | Item ID |
+**Description:** Returns an item with its categorization details.
 
 **Response:**
 ```json
 {
-  "id": "item123",
+  "id": 1,
   "title": "Dell PowerEdge R740 Server",
-  "mainCategory": {
-    "id": "cat789",
-    "name": "Servers"
-  },
+  "mainCategory": {"id": 1, "name": "Servers"},
   "categoryProbabilities": [
     {
+      "id": 1,
       "probability": 0.85,
-      "category": {
-        "id": "cat789",
-        "name": "Servers"
-      }
+      "category": {"id": 1, "name": "Servers"}
     }
   ],
   "auction": {
-    "id": "clx789ghi",
-    "scraper": {...}
+    "id": 1,
+    "title": "Server Auction",
+    "scraper": {"id": 1, "name": "BOPA"}
+  }
+}
+```
+
+---
+
+## Websites
+
+### Get All Websites
+
+**Endpoint:** `GET /api/websites`
+
+**Description:** Returns all websites (scrapers).
+
+**Response:**
+```json
+[
+  {
+    "id": 1,
+    "url": "https://www.bopa.be",
+    "name": "BOPA Veilingen",
+    "imageUrl": "https://www.bopa.be/favicon.ico",
+    "enabled": true
+  }
+]
+```
+
+---
+
+### Add Website
+
+**Endpoint:** `POST /api/websites`
+
+**Description:** Adds a new website (scraper).
+
+**Request Body:**
+```json
+{
+  "url": "https://example-auction.com"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "scraper": {
+    "id": 2,
+    "url": "https://example-auction.com",
+    "name": "Example Auctions",
+    "imageUrl": "https://example-auction.com/favicon.ico",
+    "enabled": true
   }
 }
 ```
@@ -913,9 +849,111 @@ To remove the category assignment:
 | Code | Description |
 |------|-------------|
 | 200 | Success |
-| 400 | Invalid item ID |
-| 404 | Item not found |
+| 400 | Invalid URL or website already exists |
 | 500 | Server error |
+
+---
+
+### Delete Website
+
+**Endpoint:** `DELETE /api/websites/:id`
+
+**Description:** Deletes a website and all its data.
+
+**Response:**
+```json
+{
+  "success": true
+}
+```
+
+**Status Codes:**
+| Code | Description |
+|------|-------------|
+| 200 | Success |
+| 400 | Invalid website ID |
+| 404 | Website not found |
+| 500 | Server error |
+
+---
+
+### Scrape Website
+
+**Endpoint:** `POST /api/websites/:id/scrape`
+
+**Description:** Triggers scraping for a specific website.
+
+**Response:**
+```json
+{
+  "success": true,
+  "scraperId": "1",
+  "auctionsFound": 10,
+  "newAuctions": 5
+}
+```
+
+---
+
+## Database
+
+### Seed Database
+
+**Endpoint:** `POST /api/database/seed`
+
+**Description:** Seeds the database with categories and scrapers from config files.
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Database seeded successfully. Categories and scrapers have been initialized."
+}
+```
+
+---
+
+### Wipe Database Tables
+
+**Endpoint:** `POST /api/database/wipe`
+
+**Description:** Wipes specific database tables.
+
+**Request Body:**
+```json
+{
+  "tables": ["categoryProbabilities", "auctionItems", "auctions"]
+}
+```
+
+Valid tables: `auctions`, `auctionItems`, `categoryProbabilities`
+
+**Response:**
+```json
+{
+  "success": true,
+  "deleted": {
+    "categoryProbabilities": 0,
+    "auctionItems": 0,
+    "auctions": 0
+  }
+}
+```
+
+---
+
+## Health
+
+### Health Check
+
+**Endpoint:** `GET /api/health`
+
+**Description:** Basic health check.
+
+**Response:**
+```json
+"Hello world!"
+```
 
 ---
 

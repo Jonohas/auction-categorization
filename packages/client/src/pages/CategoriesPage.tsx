@@ -214,7 +214,7 @@ export function CategoriesPage() {
                 )}
                 <div className="flex items-center justify-between">
                   <Badge variant="info">
-                    {category._count?.items || 0} item{(category._count?.items || 0) !== 1 ? "s" : ""}
+                    {category.itemCount || 0} item{(category.itemCount || 0) !== 1 ? "s" : ""}
                   </Badge>
                   <Link
                     to={`/categories/${category.id}`}

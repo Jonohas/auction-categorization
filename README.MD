@@ -14,17 +14,18 @@ A web application for scraping auction websites and automatically categorizing i
 ## Tech Stack
 
 ### Backend
-- **Runtime**: Node.js / Bun
-- **Framework**: Express.js
-- **Database**: SQLite with Prisma ORM
+- **Runtime**: Bun (recommended) / Node.js
+- **Framework**: Express.js 5.x
+- **Database**: SQLite with Drizzle ORM + libsql client
 - **AI**: Azure OpenAI (GPT-4.1-mini)
 - **API Documentation**: OpenAPI
 
 ### Frontend
-- **Framework**: React 19
-- **Routing**: TanStack Router
+- **Framework**: React 18
+- **Routing**: React Router DOM 6
 - **Styling**: Tailwind CSS
-- **Bundler**: Bun
+- **State Management**: Zustand
+- **Bundler**: Vite
 
 ## Prerequisites
 
@@ -74,20 +75,20 @@ A web application for scraping auction websites and automatically categorizing i
 
 3. **Set up the database**
    ```bash
-   # Generate Prisma client and run migrations
-   bun run prisma-generate
-   cd packages/server && bunx prisma migrate dev
+   # Generate database (SQLite)
+   # Database is automatically created at packages/server/db/dev.db
    ```
 
 4. **Configure environment** (optional)
    ```bash
    # Copy example config if needed
-   # The config.toml file contains all settings
+   cp packages/server/config/config-example.toml packages/server/config/config.toml
+   # Edit packages/server/config/config.toml
    ```
 
 ## Configuration
 
-Edit `config/config.toml` to configure the application:
+Edit `packages/server/config/config.toml` to configure the application:
 
 ```toml
 [ai]
@@ -150,81 +151,6 @@ cd packages/server && bun run start
 - **Backend API**: http://localhost:3000
 - **API Documentation**: http://localhost:3000/api (OpenAPI)
 
-## API Endpoints
-
-### Auction Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/getAuctions` | List all auctions |
-| GET | `/api/index?id=` | Get auction details |
-| GET | `/api/getItemsByCategory?categoryId=` | Get items by category |
-
-### Category Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/getCategories` | List all categories |
-| POST | `/api/createCategory` | Create a new category |
-| POST | `/api/updateCategory` | Update a category |
-| POST | `/api/deleteCategory` | Delete a category |
-
-### AI Categorization Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/categorizeItem` | Categorize a single item |
-| POST | `/api/categorizeItems` | Categorize multiple items |
-| POST | `/api/categorizeAuction` | Categorize all items in an auction |
-| GET | `/api/getItemCategorization?itemId=` | Get categorization results |
-
-### Scraping Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/triggerScrape` | Trigger scraping for all enabled scrapers |
-| POST | `/api/scrapeScraper` | Scrape a specific scraper |
-| GET | `/api/getScrapers` | List all scrapers |
-| POST | `/api/enableScraper` | Enable a scraper |
-| POST | `/api/disableScraper` | Disable a scraper |
-
-## Usage Guide
-
-### Creating Categories
-
-1. Navigate to the Categories page
-2. Click "Add Category"
-3. Enter a name and optional description
-4. Click "Create"
-
-### Categorizing Items
-
-1. Go to an auction detail page
-2. Click "AI Categorize All Items" to categorize all items at once
-3. Or click "Categorize" on individual items
-
-### Understanding Results
-
-- **Category Badge**: Shown when AI confidence ≥ 50%
-- **Categorize Button**: Shown when no confident prediction exists
-- **Category Distribution**: Click "Show category distribution" to see all probabilities
-
-### API Key Setup
-
-To enable AI categorization:
-
-1. Get your Azure OpenAI API key from Azure Portal
-2. Add it to `config/config.toml` or set as environment variable
-3. Configure `azure_endpoint` and `azure_deployment`
-4. Restart the server
-
-Example:
-```bash
-export AI_API_KEY="your-api-key"
-export AI_AZURE_ENDPOINT="https://your-resource.openai.azure.com/"
-export AI_AZURE_DEPLOYMENT="gpt-4.1-mini"
-```
-
 ## Project Structure
 
 This is a **Bun workspace monorepo** with separate client and server packages.
@@ -234,44 +160,51 @@ auction-categorization/
 ├── packages/
 │   ├── client/                      # React frontend
 │   │   ├── src/
-│   │   │   ├── app.tsx              # Main React app with routing
-│   │   │   ├── main.tsx             # React entry point
-│   │   │   ├── pages/               # Page components
+│   │   │   ├── app.tsx             # Main React app with routing
+│   │   │   ├── main.tsx            # React entry point
+│   │   │   ├── pages/              # Page components
 │   │   │   │   ├── HomePage.tsx
 │   │   │   │   ├── AuctionsPage.tsx
 │   │   │   │   ├── AuctionDetailPage.tsx
+│   │   │   │   ├── AllItemsPage.tsx
 │   │   │   │   ├── CategoriesPage.tsx
 │   │   │   │   ├── CategoryDetailPage.tsx
-│   │   │   │   └── ScrapingPage.tsx
-│   │   │   └── components/          # Reusable UI components
-│   │   ├── package.json
-│   │   ├── vite.config.ts
-│   │   └── tailwind.config.ts
+│   │   │   │   ├── ScrapingPage.tsx
+│   │   │   │   └── DatabasePage.tsx
+│   │   │   ├── components/          # Reusable UI components
+│   │   │   └── stores/              # Zustand state stores
+│   │   └── package.json
 │   └── server/                      # Express backend
 │       ├── src/
 │       │   ├── index.ts             # Express server entry
-│       │   ├── routes/
-│       │   │   └── api.ts           # API route handlers
+│       │   ├── db/
+│       │   │   ├── schema.ts        # Drizzle schema
+│       │   │   └── db.ts            # Database client
+│       │   ├── routes/api/          # File-based API routes
+│       │   │   ├── auctions/
+│       │   │   ├── categories/
+│       │   │   ├── scrapers/
+│       │   │   ├── items/
+│       │   │   ├── websites/
+│       │   │   ├── categorization/
+│       │   │   ├── database/
+│       │   │   ├── health/
+│       │   │   └── stats/
 │       │   ├── services/
-│       │   │   ├── aiCategorization.ts   # AI categorization logic
-│       │   │   ├── aiProbability.ts      # AI probability scoring
-│       │   │   └── scrapingService.ts    # Web scraping service
-│       │   ├── scrapers/            # Web scraper implementations
+│       │   │   ├── aiCategorization.ts
+│       │   │   ├── aiProbability.ts
+│       │   │   └── scrapingService.ts
+│       │   ├── scrapers/
+│       │   │   ├── index.ts
 │       │   │   └── bopaScraper.ts
 │       │   └── lib/
-│       │       ├── config.ts        # Configuration loader
-│       │       ├── db.ts            # Prisma client
-│       │       └── sanitization.ts
+│       │       └── config.ts
+│       ├── db/                       # SQLite database & migrations
+│       │   └── dev.db
+│       ├── drizzle/                  # Drizzle migrations
+│       ├── config/                    # Configuration files
 │       └── package.json
-├── prisma/
-│   ├── schema.prisma                # Database schema
-│   ├── dev.db                       # SQLite database
-│   └── migrations/                  # Database migrations
-├── config/
-│   └── config.toml                  # Application configuration
-├── docs/
-│   └── domain-model.md              # Domain model documentation
-├── package.json                     # Root workspace configuration
+├── package.json                      # Root workspace configuration
 └── README.md
 ```
 
@@ -284,10 +217,10 @@ auction-categorization/
 lsof -ti:3000 | xargs kill -9
 
 # Check configuration
-cat config/config.toml
+cat packages/server/config/config.toml
 
 # Check database
-cd packages/server && bunx prisma db push
+ls -la packages/server/db/
 ```
 
 ### Frontend won't start
@@ -308,19 +241,11 @@ bun install
 3. Check server logs for errors
 4. Ensure categories exist in the database
 
-```bash
-# Test API key
-curl -s -X POST "http://localhost:3000/api/categorizeItem" \
-  -H "Content-Type: application/json" \
-  -d '{"itemId": "your-item-id"}'
-```
-
 ### Database issues
 
 ```bash
-# Reset database (WARNING: loses all data)
-rm prisma/dev.db
-cd packages/server && bunx prisma migrate dev --name init
+# The project uses Drizzle ORM with SQLite
+# Database file is at: packages/server/db/dev.db
 ```
 
 ## License

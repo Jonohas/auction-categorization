@@ -7,7 +7,7 @@ This document describes the technology stack used in the Auction Categorization 
 The application is a full-stack web application with:
 - **Backend**: Express.js server with TypeScript
 - **Frontend**: React application with TypeScript
-- **Database**: SQLite with Prisma ORM
+- **Database**: SQLite with Drizzle ORM
 - **AI Services**: Azure OpenAI integration
 
 ## Backend
@@ -30,15 +30,16 @@ The application is a full-stack web application with:
 | Component | Technology | Purpose |
 |-----------|------------|---------|
 | Database | SQLite | Lightweight file-based database |
-| ORM | Prisma | Type-safe database client |
-| Migration Tool | Prisma Migrate | Database schema management |
+| ORM | Drizzle | Type-safe database client |
+| Client | libsql (@libsql/client) | SQLite client |
+| Migration Tool | Drizzle Kit | Database schema management |
 
 ### AI Integration
 | Component | Technology | Purpose |
 |-----------|------------|---------|
 | Primary AI | Azure OpenAI | Category classification |
 | Model | GPT-4.1-mini | Default categorization model |
-| Fallback AI | OpenAI (standard) | Alternative AI provider |
+| SDK | OpenAI SDK | AI API calls |
 
 ### HTML Parsing & Scraping
 | Component | Technology | Purpose |
@@ -50,7 +51,7 @@ The application is a full-stack web application with:
 | Component | Technology | Purpose |
 |-----------|------------|---------|
 | Format | TOML | Configuration file format |
-| Loader | @iarna/toml | TOML parsing |
+| Parser | toml | TOML parsing |
 
 ## Frontend
 
@@ -68,18 +69,16 @@ The application is a full-stack web application with:
 | Router | React Router DOM | Client-side routing |
 | Version | 6.x | SPA routing |
 
+### State Management
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| State | Zustand | Lightweight state management |
+
 ### Styling
 | Component | Technology | Purpose |
 |-----------|------------|---------|
 | CSS Framework | Tailwind CSS | Utility-first styling |
 | Version | 3.4 | Current version |
-
-### Development Tools
-| Component | Technology | Purpose |
-|-----------|------------|---------|
-| Build Tool | Vite | Development server & bundler |
-| Linter | ESLint | Code quality |
-| Type Checking | TypeScript Compiler | Type validation |
 
 ## API Client & Testing
 
@@ -93,67 +92,74 @@ The application is a full-stack web application with:
 
 ```
 auction-categorization/
-├── config/                 # Configuration files
-│   └── config-example.toml
-├── prisma/                 # Database layer
-│   ├── schema.prisma      # Database schema
-│   └── migrations/        # Database migrations
-├── src/                    # Source code
-│   ├── main.tsx           # Frontend entry point
-│   ├── app.tsx            # Frontend app with routing
-│   ├── app.css            # Global styles
-│   └── server/            # Backend server
-│       ├── index.ts       # Express server entry
-│       ├── routes/
-│       │   └── api.ts     # API route handlers
-│       ├── services/      # Business logic
-│       │   ├── aiCategorization.ts
-│       │   ├── aiProbability.ts
-│       │   └── scrapingService.ts
-│       ├── scrapers/      # Website scrapers
-│       │   ├── index.ts
-│       │   └── bopaScraper.ts
-│       └── lib/           # Shared utilities
-│           ├── config.ts
-│           ├── db.ts
-│           └── sanitization.ts
-├── bruno/                  # API test collections
-│   └── Auction Scraper/
-├── package.json           # Dependencies
-├── vite.config.ts         # Vite configuration
-├── tailwind.config.ts     # Tailwind configuration
-└── tsconfig.json          # TypeScript configuration
+├── packages/
+│   ├── client/                 # React frontend
+│   │   ├── src/
+│   │   │   ├── app.tsx        # Main app with routing
+│   │   │   ├── main.tsx       # Entry point
+│   │   │   ├── pages/         # Page components
+│   │   │   ├── components/    # UI components
+│   │   │   └── stores/        # Zustand stores
+│   │   └── package.json
+│   │
+│   └── server/                 # Express backend
+│       ├── src/
+│       │   ├── index.ts        # Server entry point
+│       │   ├── routes/api/     # File-based API routes
+│       │   ├── services/       # Business logic
+│       │   │   ├── aiCategorization.ts
+│       │   │   ├── aiProbability.ts
+│       │   │   └── scrapingService.ts
+│       │   ├── scrapers/       # Website scrapers
+│       │   │   ├── index.ts
+│       │   │   └── bopaScraper.ts
+│       │   ├── db/             # Database schema
+│       │   │   ├── schema.ts
+│       │   │   └── db.ts
+│       │   └── lib/            # Utilities
+│       │       └── config.ts
+│       ├── db/                  # SQLite database
+│       ├── drizzle/             # Drizzle migrations
+│       └── config/              # Configuration files
+│
+├── package.json                # Workspace root
+└── bun.lock                    # Lockfile
 ```
 
 ## Dependencies
 
-### Main Dependencies (package.json)
+### Main Dependencies
+
+**Server (packages/server/package.json):**
 ```json
 {
   "dependencies": {
-    "express": "^4.x",
-    "@prisma/client": "^5.x",
-    "openai": "^4.x",
-    "cheerio": "^1.0.x",
-    "@iarna/toml": "^2.2.x",
-    "react": "^18.x",
-    "react-dom": "^18.x",
-    "react-router-dom": "^6.x"
-  },
-  "devDependencies": {
-    "typescript": "^5.x",
-    "vite": "^5.x",
-    "tailwindcss": "^3.x",
-    "prisma": "^5.x",
-    "@types/express": "^4.x",
-    "@types/node": "^20.x"
+    "@libsql/client": "^0.17.0",
+    "cheerio": "^1.0.0-rc.10",
+    "dotenv": "^17.2.3",
+    "drizzle-orm": "^0.45.1",
+    "express": "^5.2.1",
+    "openai": "^4.73.0",
+    "toml": "^3.0.0"
+  }
+}
+```
+
+**Client (packages/client/package.json):**
+```json
+{
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.30.3",
+    "zustand": "^5.0.10"
   }
 }
 ```
 
 ## Environment Configuration
 
-### Configuration File (config/config-example.toml)
+### Configuration File (packages/server/config/config-example.toml)
 
 ```toml
 [ai]
@@ -170,17 +176,11 @@ timeout_seconds = 30
 max_concurrent = 5
 
 [database]
-path = "./prisma/dev.db"
+path = "./db/dev.db"
 
 [server]
 port = 3000
 host = "localhost"
-
-[[scrapers]]
-name = "BOPA Veilingen"
-url = "https://www.bopa.be"
-image_url = "https://www.bopa.be/favicon.ico"
-enabled = true
 ```
 
 ### Environment Variables
@@ -210,19 +210,10 @@ bun run dev:client
 ### Production
 ```bash
 # Build the application
-bun run build
+cd packages/server && bun run build
 
 # Start production server
-bun run start
-```
-
-### Database
-```bash
-# Run migrations
-bun prisma migrate dev
-
-# Open Prisma Studio
-bun prisma studio
+cd packages/server && bun run start
 ```
 
 ## Browser Access
@@ -231,4 +222,3 @@ bun prisma studio
 |---------|-----|-------------|
 | Frontend | http://localhost:5173 | React application |
 | Backend API | http://localhost:3000 | REST API server |
-| Prisma Studio | http://localhost:5555 | Database GUI (dev) |

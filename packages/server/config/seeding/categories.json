@@ -1,27 +1,122 @@
 [
   {
-    "name": "Electronics",
-    "description": "Electronic devices and gadgets",
+    "name": "Other",
+    "description": "Items that don't fit into any other category",
     "isSystem": true
+  },
+  {
+    "name": "Servers",
+    "description": "Rack servers, blade servers, tower servers, and server equipment",
+    "isSystem": false
+  },
+  {
+    "name": "Server Hardware",
+    "description": "Server components, RAID arrays, server memory, CPUs, and hardware accessories",
+    "isSystem": false
+  },
+  {
+    "name": "Networking Equipment",
+    "description": "Switches, routers, firewalls, network storage, and networking hardware",
+    "isSystem": false
+  },
+  {
+    "name": "Workstations",
+    "description": "High-performance workstations for professional use",
+    "isSystem": false
+  },
+  {
+    "name": "Desktop Computers",
+    "description": "Desktop PCs, all-in-one computers, and barebone kits",
+    "isSystem": false
+  },
+  {
+    "name": "Laptops",
+    "description": "Laptop computers, notebooks, and mobile workstations",
+    "isSystem": false
+  },
+  {
+    "name": "Computer Components",
+    "description": "CPUs, GPUs, RAM, storage drives, motherboards, and PC components",
+    "isSystem": false
+  },
+  {
+    "name": "Computer Accessories",
+    "description": "Monitors, keyboards, mice, headsets, webcams, and peripherals",
+    "isSystem": false
+  },
+  {
+    "name": "Small Household Appliances",
+    "description": "Coffee makers, toasters, blenders, air fryers, microwaves, vacuum cleaners, irons, and other small kitchen/household devices",
+    "isSystem": false
+  },
+  {
+    "name": "Large Household Appliances",
+    "description": "Refrigerators, washing machines, dryers, dishwashers, ovens, cooktops, and built-in appliances",
+    "isSystem": false
+  },
+  {
+    "name": "Climate Control",
+    "description": "Air conditioners, heaters, fans, humidifiers, and climate control systems",
+    "isSystem": false
+  },
+  {
+    "name": "Cars",
+    "description": "Personal vehicles, sedans, hatchbacks, and compact cars",
+    "isSystem": false
+  },
+  {
+    "name": "SUVs & Crossovers",
+    "description": "Sport utility vehicles and crossover vehicles",
+    "isSystem": false
+  },
+  {
+    "name": "Trucks & Vans",
+    "description": "Pickup trucks, cargo vans, and commercial vehicles",
+    "isSystem": false
+  },
+  {
+    "name": "Motorcycles",
+    "description": "Motorcycles, scooters, and electric motorcycles",
+    "isSystem": false
+  },
+  {
+    "name": "Electronics",
+    "description": "Electronic devices, gadgets, audio equipment, and consumer electronics",
+    "isSystem": false
   },
   {
     "name": "Furniture",
-    "description": "Home and office furniture",
-    "isSystem": true
+    "description": "Home and office furniture including tables, chairs, beds, and storage",
+    "isSystem": false
   },
   {
     "name": "Art",
-    "description": "Paintings, sculptures, and artwork",
-    "isSystem": true
+    "description": "Paintings, sculptures, prints, and artwork",
+    "isSystem": false
   },
   {
     "name": "Collectibles",
-    "description": "Rare and collectible items",
-    "isSystem": true
+    "description": "Rare and collectible items, antiques, and memorabilia",
+    "isSystem": false
   },
   {
     "name": "Jewelry",
-    "description": "Watches, jewelry, and precious items",
-    "isSystem": true
+    "description": "Watches, jewelry, precious metals, and gemstones",
+    "isSystem": false
+  },
+  {
+    "name": "Tools",
+    "description": "Power tools, hand tools, and workshop equipment",
+    "isSystem": false
+  },
+  {
+    "name": "Sports & Outdoors",
+    "description": "Sports equipment, outdoor gear, camping equipment, and fitness equipment",
+    "isSystem": false
+  },
+  {
+    "name": "Garden & Outdoor",
+    "description": "Lawn mowers, garden furniture, BBQ equipment, and outdoor items",
+    "isSystem": false
   }
 ]
