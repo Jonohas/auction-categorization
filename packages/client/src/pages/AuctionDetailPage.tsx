@@ -37,7 +37,7 @@ export function AuctionDetailPage() {
   const selectAll = useItemSelectionStore((state) => state.selectAll);
 
   useEffect(() => {
-    fetch(`/api/getAuction?id=${auctionId}`)
+    fetch(`/api/auctions/${auctionId}`)
       .then((res) => res.json())
       .then((data) => {
         setAuction(data);
@@ -67,7 +67,7 @@ export function AuctionDetailPage() {
     setCategorizeProgress("Starting categorization...");
 
     try {
-      const response = await fetch("/api/categorizeAuction", {
+      const response = await fetch("/api/categorization/auction", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ auctionId: auction.id, saveResults: true }),
@@ -82,7 +82,7 @@ export function AuctionDetailPage() {
       setCategorizeProgress(`Categorized ${data.itemCount} items...`);
       setSuccess(`Successfully categorized ${data.itemCount} items!`);
 
-      const refreshResponse = await fetch(`/api/getAuction?id=${auctionId}`);
+      const refreshResponse = await fetch(`/api/auctions/${auctionId}`);
       const refreshData = await refreshResponse.json();
       setAuction(refreshData);
     } catch (err: any) {
@@ -100,7 +100,7 @@ export function AuctionDetailPage() {
     setSuccess(null);
 
     try {
-      const response = await fetch("/api/categorizeItem", {
+      const response = await fetch("/api/categorization/item", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ itemId }),
@@ -114,7 +114,7 @@ export function AuctionDetailPage() {
 
       setSuccess("Item categorized successfully!");
 
-      const refreshResponse = await fetch(`/api/getAuction?id=${auctionId}`);
+      const refreshResponse = await fetch(`/api/auctions/${auctionId}`);
       const refreshData = await refreshResponse.json();
       setAuction(refreshData);
     } catch (err: any) {
@@ -130,7 +130,7 @@ export function AuctionDetailPage() {
     setCategorizeProgress(`Bulk categorizing ${itemIds.length} items...`);
 
     try {
-      const response = await fetch("/api/categorizeItems", {
+      const response = await fetch("/api/categorization/items", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ itemIds, saveResults: true }),
@@ -146,7 +146,7 @@ export function AuctionDetailPage() {
       clearSelection();
 
       // Refresh auction data
-      const refreshResponse = await fetch(`/api/getAuction?id=${auctionId}`);
+      const refreshResponse = await fetch(`/api/auctions/${auctionId}`);
       const refreshData = await refreshResponse.json();
       setAuction(refreshData);
     } catch (err: any) {

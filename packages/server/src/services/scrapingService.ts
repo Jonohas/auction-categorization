@@ -1,7 +1,7 @@
 import { scraperFactory } from "../scrapers";
-import { loadConfig, getScrapersFromConfig } from "../lib/config";
+import { loadConfig, loadScrapersFromJson, loadCategoriesFromJson } from "../lib/config";
 import { db } from "../db/db";
-import { scrapers, auctions, auctionItem } from "../db/schema";
+import { scrapers, auctions, auctionItem, categories } from "../db/schema";
 import type { InferSelectModel } from "drizzle-orm";
 import { eq, desc } from "drizzle-orm";
 
@@ -16,7 +16,7 @@ export interface ScrapeResult {
 }
 
 export async function initializeScrapersFromConfig(): Promise<void> {
-  const configScrapers = getScrapersFromConfig();
+  const configScrapers = loadScrapersFromJson();
 
   for (const configScraper of configScrapers) {
     try {
@@ -35,6 +35,29 @@ export async function initializeScrapersFromConfig(): Promise<void> {
       }
     } catch (error) {
       console.error(`Error initializing scraper ${configScraper.name}:`, error);
+    }
+  }
+}
+
+export async function initializeCategoriesFromJson(): Promise<void> {
+  const configCategories = loadCategoriesFromJson();
+
+  for (const configCategory of configCategories) {
+    try {
+      // Check if category already exists
+      const existingCategory = await db.select().from(categories).where(eq(categories.name, configCategory.name)).limit(1);
+
+      if (existingCategory.length === 0) {
+        // Create new category from config
+        await db.insert(categories).values({
+          name: configCategory.name,
+          description: configCategory.description,
+          isSystem: configCategory.isSystem ?? false,
+        });
+        console.log(`Initialized category: ${configCategory.name}`);
+      }
+    } catch (error) {
+      console.error(`Error initializing category ${configCategory.name}:`, error);
     }
   }
 }
@@ -161,7 +184,9 @@ export async function scrapeWebsite(scraperId: string): Promise<ScrapeResult> {
 }
 
 export async function scrapeAllWebsites(): Promise<ScrapeResult[]> {
-  // Initialize scrapers from config first
+  // Initialize categories from JSON first
+  await initializeCategoriesFromJson();
+  // Initialize scrapers from config
   await initializeScrapersFromConfig();
 
   const scraperRecords = await db.select().from(scrapers).where(eq(scrapers.enabled, true));

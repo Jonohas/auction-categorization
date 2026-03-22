@@ -33,12 +33,17 @@ export interface ScraperConfig {
   enabled: boolean;
 }
 
+export interface CategoryConfig {
+  name: string;
+  description: string;
+  isSystem?: boolean;
+}
+
 export interface Config {
   ai: AiConfig;
   scraping: ScrapingConfig;
   database: DatabaseConfig;
   server: ServerConfig;
-  scrapers: ScraperConfig[];
 }
 
 let cachedConfig: Config | null = null;
@@ -106,9 +111,46 @@ export function loadConfig(): Config {
   }
 }
 
-export function getScrapersFromConfig(): ScraperConfig[] {
-  const config = loadConfig();
-  return config.scrapers || [];
+export function loadScrapersFromJson(): ScraperConfig[] {
+  const configPaths = [
+    resolve(process.cwd(), "config/seeding/scrapers.json"),
+    resolve(process.cwd(), "../config/seeding/scrapers.json"),
+    resolve(__dirname, "..", "config/seeding/scrapers.json"),
+  ];
+
+  for (const path of configPaths) {
+    try {
+      const content = readFileSync(path, "utf-8");
+      if (content) {
+        return JSON.parse(content) as ScraperConfig[];
+      }
+    } catch {
+      // Try next path
+    }
+  }
+
+  return [];
+}
+
+export function loadCategoriesFromJson(): CategoryConfig[] {
+  const configPaths = [
+    resolve(process.cwd(), "config/seeding/categories.json"),
+    resolve(process.cwd(), "../config/seeding/categories.json"),
+    resolve(__dirname, "..", "config/seeding/categories.json"),
+  ];
+
+  for (const path of configPaths) {
+    try {
+      const content = readFileSync(path, "utf-8");
+      if (content) {
+        return JSON.parse(content) as CategoryConfig[];
+      }
+    } catch {
+      // Try next path
+    }
+  }
+
+  return [];
 }
 
 function getDefaultConfig(): Config {
@@ -133,6 +175,5 @@ function getDefaultConfig(): Config {
       port: 3000,
       host: "localhost",
     },
-    scrapers: [],
   };
 }

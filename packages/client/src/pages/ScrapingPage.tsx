@@ -13,7 +13,7 @@ export function ScrapingPage() {
   }, []);
 
   const fetchScrapers = () => {
-    fetch("/api/getScrapers")
+    fetch("/api/scrapers")
       .then((res) => res.json())
       .then(setScrapers)
       .catch(console.error);
@@ -25,7 +25,7 @@ export function ScrapingPage() {
     setSuccess(null);
 
     try {
-      const response = await fetch("/api/triggerScrape", {
+      const response = await fetch("/api/auctions/trigger-scrape", {
         method: "POST",
       });
       const results = await response.json();
@@ -62,10 +62,8 @@ export function ScrapingPage() {
     setSuccess(null);
 
     try {
-      const response = await fetch("/api/scrapeScraper", {
+      const response = await fetch(`/api/scrapers/${scraperId}/scrape`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scraperId }),
       });
       const result = await response.json();
 
@@ -84,10 +82,9 @@ export function ScrapingPage() {
 
   const handleToggleScraper = async (scraperId: string, enabled: boolean) => {
     try {
-      const response = await fetch(enabled ? "/api/disableScraper" : "/api/enableScraper", {
+      const endpoint = enabled ? `/api/scrapers/${scraperId}/disable` : `/api/scrapers/${scraperId}/enable`;
+      const response = await fetch(endpoint, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scraperId }),
       });
       const result = await response.json();
 

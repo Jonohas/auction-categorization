@@ -6,7 +6,7 @@ export function HomePage() {
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    fetch("/api/getStats")
+    fetch("/api/stats")
       .then((res) => res.json())
       .then(setStats)
       .catch(console.error);

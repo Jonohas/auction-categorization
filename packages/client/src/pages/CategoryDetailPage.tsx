@@ -28,7 +28,7 @@ export function CategoryDetailPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch(`/api/getItemsByCategory?categoryId=${categoryId}`);
+        const response = await fetch(`/api/categories/items?categoryId=${categoryId}`);
         if (!response.ok) throw new Error("Failed to fetch category");
         const result = await response.json();
         setData(result);
@@ -51,7 +51,7 @@ export function CategoryDetailPage() {
   }, [clearSelection]);
 
   const refreshData = async () => {
-    const response = await fetch(`/api/getItemsByCategory?categoryId=${categoryId}`);
+    const response = await fetch(`/api/categories/items?categoryId=${categoryId}`);
     if (response.ok) {
       const result = await response.json();
       setData(result);
@@ -64,7 +64,7 @@ export function CategoryDetailPage() {
     setCategorizeProgress(`Bulk categorizing ${itemIds.length} items...`);
 
     try {
-      const response = await fetch("/api/categorizeItems", {
+      const response = await fetch("/api/categorization/items", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ itemIds, saveResults: true }),

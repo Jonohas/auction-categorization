@@ -47,7 +47,7 @@ export function CategoriesPage() {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch("/api/getCategories");
+      const response = await fetch("/api/categories");
       const data = await response.json();
       setCategories(data);
     } catch (err) {
@@ -87,11 +87,10 @@ export function CategoriesPage() {
 
     try {
       if (editingCategory) {
-        const response = await fetch("/api/updateCategory", {
-          method: "POST",
+        const response = await fetch(`/api/categories/${editingCategory.id}`, {
+          method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            id: editingCategory.id,
             name: formData.name,
             description: formData.description,
           }),
@@ -102,7 +101,7 @@ export function CategoriesPage() {
         }
         setSuccess("Category updated successfully");
       } else {
-        const response = await fetch("/api/createCategory", {
+        const response = await fetch("/api/categories", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -131,10 +130,8 @@ export function CategoriesPage() {
     }
 
     try {
-      const response = await fetch("/api/deleteCategory", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: categoryId }),
+      const response = await fetch(`/api/categories/${categoryId}`, {
+        method: "DELETE",
       });
       const data = await response.json();
       if (!response.ok) {

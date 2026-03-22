@@ -35,8 +35,8 @@ export function AuctionsPage() {
       params.set("sortOrder", sortOrder);
 
       const [auctionsRes, scrapersRes] = await Promise.all([
-        fetch(`/api/getAuctions?${params}`),
-        fetch("/api/getScrapers"),
+        fetch(`/api/auctions?${params}`),
+        fetch("/api/scrapers"),
       ]);
 
       const auctionsData = await auctionsRes.json();
@@ -52,7 +52,7 @@ export function AuctionsPage() {
   };
 
   const filteredAuctions = hideEmptyAuctions
-    ? auctions.filter((auction) => (auction.items?.length || 0) > 0)
+    ? auctions.filter((auction) => Number(auction.itemsCount) > 0)
     : auctions;
 
   return (
@@ -170,7 +170,7 @@ export function AuctionsPage() {
                       </a>
                     </h3>
                     <div className="flex items-center gap-4 text-sm text-gray-500">
-                      <span>{auction.items?.length || 0} items</span>
+                      <span>{auction.itemsCount || 0} items</span>
                       {auction.endDate && (
                         <span>Closes: {new Date(auction.endDate).toLocaleDateString()}</span>
                       )}

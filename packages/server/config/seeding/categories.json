@@ -1,0 +1,27 @@
+[
+  {
+    "name": "Electronics",
+    "description": "Electronic devices and gadgets",
+    "isSystem": true
+  },
+  {
+    "name": "Furniture",
+    "description": "Home and office furniture",
+    "isSystem": true
+  },
+  {
+    "name": "Art",
+    "description": "Paintings, sculptures, and artwork",
+    "isSystem": true
+  },
+  {
+    "name": "Collectibles",
+    "description": "Rare and collectible items",
+    "isSystem": true
+  },
+  {
+    "name": "Jewelry",
+    "description": "Watches, jewelry, and precious items",
+    "isSystem": true
+  }
+]

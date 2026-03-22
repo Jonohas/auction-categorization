@@ -29,10 +29,3 @@ path = "./prisma/dev.db"
 port = 3000
 # Server host
 host = "localhost"
-
-# Predefined Scrapers Configuration
-[[scrapers]]
-name = "BOPA Veilingen"
-url = "https://www.bopa.be"
-image_url = "https://www.bopa.be/favicon.ico"
-enabled = true

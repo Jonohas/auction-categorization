@@ -65,7 +65,7 @@ export function AllItemsPage() {
 
   // Fetch filter options on mount
   useEffect(() => {
-    fetch("/api/getFilterOptions")
+    fetch("/api/items/filter-options")
       .then((res) => res.json())
       .then((data) => setFilterOptions(data))
       .catch((err) => console.error("Failed to fetch filter options:", err));
@@ -97,7 +97,7 @@ export function AllItemsPage() {
       params.set("page", page.toString());
       params.set("limit", limit);
 
-      const response = await fetch(`/api/getAllItems?${params}`);
+      const response = await fetch(`/api/items/all?${params}`);
       const data = await response.json();
 
       if (!response.ok) {
@@ -145,7 +145,7 @@ export function AllItemsPage() {
     setSuccess(null);
 
     try {
-      const response = await fetch("/api/categorizeItems", {
+      const response = await fetch("/api/categorization/items", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ itemIds, saveResults: true }),

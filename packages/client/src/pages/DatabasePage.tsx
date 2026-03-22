@@ -26,10 +26,17 @@ const TrashIcon = () => (
   </svg>
 );
 
+const SeedIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+  </svg>
+);
+
 export function DatabasePage() {
   const [stats, setStats] = useState<DatabaseStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [wiping, setWiping] = useState(false);
+  const [seeding, setSeeding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [selectedTables, setSelectedTables] = useState<Set<string>>(new Set());
@@ -40,7 +47,7 @@ export function DatabasePage() {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch("/api/getStats");
+      const response = await fetch("/api/stats");
       const data = await response.json();
       setStats(data);
     } catch (err) {
@@ -78,7 +85,7 @@ export function DatabasePage() {
     setSuccess(null);
 
     try {
-      const response = await fetch("/api/wipeTables", {
+      const response = await fetch("/api/database/wipe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tables: tableNames }),
@@ -102,6 +109,33 @@ export function DatabasePage() {
       setError(err.message);
     } finally {
       setWiping(false);
+    }
+  };
+
+  const handleSeed = async () => {
+    setSeeding(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const response = await fetch("/api/database/seed", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to seed database");
+      }
+
+      setSuccess(data.message || "Database seeded successfully");
+      fetchStats();
+      setTimeout(() => setSuccess(null), 5000);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setSeeding(false);
     }
   };
 
@@ -147,6 +181,32 @@ export function DatabasePage() {
 
       {success && <AlertMessage type="success" message={success} className="mb-4" />}
       {error && <AlertMessage type="error" message={error} className="mb-4" />}
+
+      <Card className="mb-6">
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <SeedIcon />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Seed Database</h3>
+                <p className="text-sm text-gray-500">Initialize categories and scrapers from config</p>
+              </div>
+            </div>
+            <Button
+              variant="primary"
+              onClick={handleSeed}
+              disabled={seeding}
+            >
+              <SeedIcon />
+              <span className="ml-2">
+                {seeding ? "Seeding..." : "Seed Database"}
+              </span>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card className="mb-6">
         <CardContent>
