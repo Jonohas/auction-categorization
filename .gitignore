@@ -33,3 +33,5 @@ coverage/
 # Misc
 *.local
 /packages/server/db/dev.db
+
+/.opencode/
