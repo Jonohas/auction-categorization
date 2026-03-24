@@ -10,4 +10,4 @@ services:
     restart: unless-stopped
     volumes:
       - ./config:/app/config
-      - ./prisma:/app/prisma
+      - ./drizzle:/app/drizzle

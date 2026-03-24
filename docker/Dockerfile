@@ -37,9 +37,7 @@ COPY --from=dependencies /deps/packages/server/node_modules ./packages/server/no
 
 WORKDIR /build/packages/server
 
-RUN bun prisma generate
-
-RUN bun build src/index.ts --outdir dist --target bun --external @prisma/client
+RUN bun build src/index.ts --outdir dist --target bun --external drizzle
 
 FROM base AS production
 
@@ -50,15 +48,14 @@ WORKDIR /app
 COPY --from=frontend /build/packages/client/dist ./dist
 COPY --from=backend /build/packages/server/dist/ .
 
-# prisma you b
+# drizzle setup
 COPY package.json .
-COPY packages/server/prisma/schema.prisma ./prisma/schema.prisma
-COPY packages/server/prisma/migrations ./prisma/migrations
+COPY packages/server/drizzle ./drizzle
+COPY packages/server/db ./db
 
-RUN bun add prisma@6 @prisma/client@6 &&\
-    bun prisma generate &&\
-    mkdir -p /prisma &&\
-    cp -r ./prisma/* /prisma
+RUN bun add drizzle-kit@latest &&\
+    mkdir -p /drizzle &&\
+    cp -r ./drizzle/* /drizzle/
 
 COPY docker/entrypoint.sh ./
 
