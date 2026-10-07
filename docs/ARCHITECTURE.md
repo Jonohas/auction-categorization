@@ -114,7 +114,8 @@ packages/server/src/
 │   │   ├── item.ts           # POST /api/categorization/item
 │   │   ├── items.ts          # POST /api/categorization/items
 │   │   ├── auction.ts       # POST /api/categorization/auction
-│   │   └── [id].ts           # GET /api/categorization/:id
+│   │   ├── [id].ts           # GET /api/categorization/:id
+│   │   └── jobs/[id].ts      # GET /api/categorization/jobs/:id
 │   │
 │   ├── database/
 │   │   ├── seed.ts           # POST /api/database/seed
@@ -129,6 +130,8 @@ packages/server/src/
 │
 ├── services/
 │   ├── aiCategorization.ts     # AI categorization logic
+│   ├── categorizationJobs.ts   # Categorization job queue and worker
+│   ├── categorizationResults.ts # Save categorization results
 │   │                           # - Builds prompts with category definitions
 │   │                           # - Calls Azure OpenAI API
 │   │                           # - Parses JSON responses

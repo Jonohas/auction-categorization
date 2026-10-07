@@ -655,11 +655,33 @@ To remove the category assignment:
 
 ## AI Categorization
 
+Categorization runs as a background job. Each `POST` endpoint below validates the request, queues a categorization job, and returns `202 Accepted` with the job. Poll `GET /api/categorization/jobs/:id` until `status` is `completed` or `failed`.
+
+The server runs one job at a time, in creation order. It categorizes items in chunks of 50 and saves results after each chunk, so `processedItems` shows progress. Every job saves its results: it replaces the item's stored probabilities and sets the main category when the top probability is at least 0.5. If the server restarts mid-job, it requeues the job on startup and runs it again from the start.
+
+**Job response** (shared by all endpoints in this section):
+```json
+{
+  "id": 7,
+  "status": "pending",
+  "totalItems": 25,
+  "processedItems": 0,
+  "error": null,
+  "auctionId": 1,
+  "startedAt": null,
+  "finishedAt": null,
+  "createdAt": "2026-10-07T10:17:52.000Z",
+  "updatedAt": "2026-10-07T10:17:52.000Z"
+}
+```
+
+`status` is one of `pending`, `running`, `completed`, or `failed`. If `status` is `failed`, `error` holds the reason.
+
 ### Categorize Single Item
 
 **Endpoint:** `POST /api/categorization/item`
 
-**Description:** Uses AI to categorize a single item (returns probabilities without saving).
+**Description:** Queues a categorization job for one item.
 
 **Request Body:**
 ```json
@@ -668,21 +690,10 @@ To remove the category assignment:
 }
 ```
 
-**Response:**
-```json
-{
-  "itemId": "1",
-  "probabilities": [
-    { "categoryId": "1", "probability": 0.85 },
-    { "categoryId": "2", "probability": 0.12 }
-  ]
-}
-```
-
 **Status Codes:**
 | Code | Description |
 |------|-------------|
-| 200 | Success |
+| 202 | Job queued |
 | 400 | Invalid item ID or no categories defined |
 | 404 | Item not found |
 | 500 | Server error |
@@ -693,34 +704,19 @@ To remove the category assignment:
 
 **Endpoint:** `POST /api/categorization/items`
 
-**Description:** Uses AI to categorize multiple items.
+**Description:** Queues a categorization job for the given items. The job skips IDs that match no item.
 
 **Request Body:**
 ```json
 {
-  "itemIds": ["1", "2", "3"],
-  "saveResults": true
-}
-```
-
-**Response:**
-```json
-{
-  "itemCount": 3,
-  "results": [
-    {
-      "itemId": "1",
-      "probabilities": [...]
-    }
-  ],
-  "saved": true
+  "itemIds": ["1", "2", "3"]
 }
 ```
 
 **Status Codes:**
 | Code | Description |
 |------|-------------|
-| 200 | Success |
+| 202 | Job queued |
 | 400 | Invalid item IDs, empty array, or no categories defined |
 | 404 | No items found |
 | 500 | Server error |
@@ -731,37 +727,37 @@ To remove the category assignment:
 
 **Endpoint:** `POST /api/categorization/auction`
 
-**Description:** Uses AI to categorize all items in an auction.
+**Description:** Queues a categorization job for every item in an auction.
 
 **Request Body:**
 ```json
 {
-  "auctionId": "1",
-  "saveResults": true
-}
-```
-
-**Response:**
-```json
-{
-  "auctionId": 1,
-  "itemCount": 25,
-  "results": [
-    {
-      "itemId": "1",
-      "probabilities": [...]
-    }
-  ],
-  "saved": true
+  "auctionId": "1"
 }
 ```
 
 **Status Codes:**
 | Code | Description |
 |------|-------------|
-| 200 | Success |
+| 202 | Job queued |
 | 400 | Invalid auction ID, no items, or no categories defined |
 | 404 | Auction not found |
+| 500 | Server error |
+
+---
+
+### Get Categorization Job
+
+**Endpoint:** `GET /api/categorization/jobs/:id`
+
+**Description:** Returns a categorization job's status and progress, in the job response shape above.
+
+**Status Codes:**
+| Code | Description |
+|------|-------------|
+| 200 | Success |
+| 400 | Invalid job ID |
+| 404 | Job not found |
 | 500 | Server error |
 
 ---

@@ -12,6 +12,7 @@ import {
   BulkActionToolbar,
 } from "../components";
 import { useItemSelectionStore } from "../stores/itemSelectionStore";
+import { runCategorizationJob } from "../lib/categorizationJob";
 
 const AIIcon = () => (
   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -67,20 +68,13 @@ export function AuctionDetailPage() {
     setCategorizeProgress("Starting categorization...");
 
     try {
-      const response = await fetch("/api/categorization/auction", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ auctionId: auction.id, saveResults: true }),
-      });
+      const job = await runCategorizationJob(
+        "/api/categorization/auction",
+        { auctionId: auction.id },
+        (job) => setCategorizeProgress(`Categorized ${job.processedItems} of ${job.totalItems} items...`)
+      );
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to categorize auction");
-      }
-
-      setCategorizeProgress(`Categorized ${data.itemCount} items...`);
-      setSuccess(`Successfully categorized ${data.itemCount} items!`);
+      setSuccess(`Successfully categorized ${job.totalItems} items!`);
 
       const refreshResponse = await fetch(`/api/auctions/${auctionId}`);
       const refreshData = await refreshResponse.json();
@@ -100,17 +94,7 @@ export function AuctionDetailPage() {
     setSuccess(null);
 
     try {
-      const response = await fetch("/api/categorization/item", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ itemId }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to categorize item");
-      }
+      await runCategorizationJob("/api/categorization/item", { itemId });
 
       setSuccess("Item categorized successfully!");
 
@@ -130,19 +114,13 @@ export function AuctionDetailPage() {
     setCategorizeProgress(`Bulk categorizing ${itemIds.length} items...`);
 
     try {
-      const response = await fetch("/api/categorization/items", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ itemIds, saveResults: true }),
-      });
+      const job = await runCategorizationJob(
+        "/api/categorization/items",
+        { itemIds },
+        (job) => setCategorizeProgress(`Categorized ${job.processedItems} of ${job.totalItems} items...`)
+      );
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to bulk categorize items");
-      }
-
-      setSuccess(`Successfully categorized ${data.itemCount} items!`);
+      setSuccess(`Successfully categorized ${job.totalItems} items!`);
       clearSelection();
 
       // Refresh auction data

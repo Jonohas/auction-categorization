@@ -13,6 +13,7 @@ import { Pagination } from "../components/Pagination";
 import { MultiSelectDropdown } from "../components/MultiSelectDropdown";
 import { useItemSelectionStore } from "../stores/itemSelectionStore";
 import { useUrlSync, FilterState } from "../hooks/useUrlSync";
+import { runCategorizationJob } from "../lib/categorizationJob";
 
 interface FilterOptions {
   categories: { id: string; name: string; itemCount: number }[];
@@ -179,19 +180,9 @@ export function AllItemsPage() {
     setSuccess(null);
 
     try {
-      const response = await fetch("/api/categorization/items", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ itemIds, saveResults: true }),
-      });
+      const job = await runCategorizationJob("/api/categorization/items", { itemIds });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to bulk categorize items");
-      }
-
-      setSuccess(`Successfully categorized ${data.itemCount} items!`);
+      setSuccess(`Successfully categorized ${job.totalItems} items!`);
       clearSelection();
 
       // Refresh items
