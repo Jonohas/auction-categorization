@@ -13,6 +13,7 @@ import {
   AlertMessage,
 } from "../components";
 import { useItemSelectionStore } from "../stores/itemSelectionStore";
+import { runCategorizationJob } from "../lib/categorizationJob";
 
 export function CategoryDetailPage() {
   const { categoryId } = useParams<{ categoryId: string }>();
@@ -64,19 +65,13 @@ export function CategoryDetailPage() {
     setCategorizeProgress(`Bulk categorizing ${itemIds.length} items...`);
 
     try {
-      const response = await fetch("/api/categorization/items", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ itemIds, saveResults: true }),
-      });
+      const job = await runCategorizationJob(
+        "/api/categorization/items",
+        { itemIds },
+        (job) => setCategorizeProgress(`Categorized ${job.processedItems} of ${job.totalItems} items...`)
+      );
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || "Failed to bulk categorize items");
-      }
-
-      setSuccess(`Successfully categorized ${result.itemCount} items!`);
+      setSuccess(`Successfully categorized ${job.totalItems} items!`);
       clearSelection();
 
       // Refresh category data

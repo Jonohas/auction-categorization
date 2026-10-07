@@ -50,3 +50,21 @@ export const categoryProbability = sqliteTable("category_probability", {
     categoryId: integer("category_id").references(() => categories.id),
     itemId: integer("item_id").references(() => auctionItem.id)
 })
+
+export const categorizationJobStatuses = ["pending", "running", "completed", "failed"] as const;
+export type CategorizationJobStatus = typeof categorizationJobStatuses[number];
+
+export const categorizationJobs = sqliteTable("categorization_jobs", {
+    ...baseEntity,
+    status: text("status", {enum: categorizationJobStatuses}).notNull().default("pending"),
+    itemIds: text("item_ids", {mode: "json"}).$type<number[]>().notNull(),
+    totalItems: integer("total_items").notNull(),
+    processedItems: integer("processed_items").notNull().default(0),
+    error: text("error"),
+    startedAt: integer("started_at", {mode: 'timestamp'}),
+    finishedAt: integer("finished_at", {mode: 'timestamp'}),
+
+    auctionId: integer("auction_id").references(() => auctions.id)
+}, (table) => [
+    index("categorization_job_status_index").on(table.status)
+]);

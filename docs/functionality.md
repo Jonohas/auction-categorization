@@ -77,14 +77,16 @@ The categorization service uses Azure OpenAI to analyze item titles and descript
 
 ```
 1. User triggers categorization (single item, batch, or entire auction)
-2. For each item:
+2. The API queues a categorization job and returns 202 with the job
+3. The client polls GET /api/categorization/jobs/:id for progress
+4. A background worker runs queued jobs one at a time, in chunks of 50 items:
    a. Build system prompt with category definitions
-   b. Build user prompt with item title and description
-   c. Call Azure OpenAI API
-   d. Parse JSON response with category probabilities
-   e. Store probabilities in CategoryProbability table
-3. Apply 50% confidence threshold
-4. Set main category for items with >= 50% confidence
+   b. Send items to Azure OpenAI in parallel batches of 10
+   c. Parse JSON response with category probabilities
+   d. Replace probabilities in the CategoryProbability table
+   e. Set main category for items with >= 50% confidence
+   f. Record progress on the job
+5. The job ends as completed or failed; on restart, interrupted jobs are requeued
 ```
 
 ### 50% Confidence Threshold
